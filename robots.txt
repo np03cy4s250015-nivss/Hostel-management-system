@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /server/
+Disallow: /server/*
+Disallow: /.env
+Allow: /

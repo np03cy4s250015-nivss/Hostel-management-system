@@ -65,9 +65,9 @@ function handleLogin(e) {
     
     // Redirect to appropriate dashboard
     if (user.role === 'admin') {
-        window.location.href = 'dashboard_admin.html';
+        window.location.href = '../frontend/dashboard_admin.html';
     } else {
-        window.location.href = 'dashboard_user.html';
+        window.location.href = '../frontend/dashboard_user.html';
     }
 }
 
@@ -114,7 +114,7 @@ function checkAuth() {
         // If on a protected page and not logged in, redirect to login
         const currentPage = window.location.pathname;
         if (currentPage.includes('dashboard')) {
-            window.location.href = 'index.html';
+            window.location.href = '../index.html';
         }
         return;
     }
