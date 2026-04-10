@@ -26,7 +26,35 @@ A full-stack web application for managing hostel operations including student ma
 
 - **Frontend:** HTML, CSS, JavaScript
 - **Backend:** Node.js, Express.js
-- **Data Storage:** Local Storage (demo) / MongoDB (production ready)
+- **Database:** MySQL with Sequelize ORM
+- **Data Storage:** Local Storage (demo) / MySQL (production)
+
+## Database Schema
+
+### Tables Created:
+| Table | Description |
+|-------|-------------|
+| `users` | User accounts (admin, student, warden) |
+| `blocks` | Hostel blocks |
+| `rooms` | Room details and availability |
+| `bookings` | Room booking records |
+| `payments` | Payment transactions |
+| `complaints` | Student complaints |
+| `maintenance_requests` | Room maintenance requests |
+| `notices` | Announcements and notices |
+| `room_allocations` | Active room assignments |
+
+### ER Diagram
+```
+users (1) ──────< bookings
+rooms (1) ──────< bookings
+users (1) ──────< payments
+bookings (1) ───< payments
+users (1) ──────< complaints
+rooms (1) ──────< complaints
+users (1) ──────< room_allocations
+rooms (1) ──────< room_allocations
+```
 
 ## Project Structure
 
@@ -41,18 +69,42 @@ Hostel-management-system/
 ├── server/              # Backend code
 │   ├── index.js        # Server entry point
 │   ├── config/         # Configuration files
-│   ├── models/         # Data models
+│   │   └── database.js
+│   ├── models/         # Data models (Sequelize)
 │   ├── routes/        # API routes
 │   └── middleware/    # Custom middleware
+├── database/           # Database files
+│   ├── schema.sql     # MySQL schema
+│   └── .env.example   # Database config template
 ├── package.json
-└── .env               # Environment variables
+├── .env               # Environment variables
+├── .gitignore
+├── README.md
+└── robots.txt
 ```
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js (v14 or higher)
+- MySQL (v8.0 or higher)
 - npm or yarn
+
+### Database Setup
+
+1. Create the database:
+   ```bash
+   mysql -u root -p < database/schema.sql
+   ```
+
+2. Update `.env` with your MySQL credentials:
+   ```
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=your_password
+   DB_NAME=hostel_management
+   DB_PORT=3306
+   ```
 
 ### Installation
 
