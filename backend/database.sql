@@ -122,3 +122,7 @@ CREATE TABLE IF NOT EXISTS amenities (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (block_id) REFERENCES blocks(id) ON DELETE SET NULL
 );
+
+-- Insert default admin user (password: admin123)
+INSERT INTO users (username, password, role, first_name, last_name, email, phone) 
+VALUES ('admin', '$2b$10$0McFV9JvPsbarUbjzB9Tf.J.bJrnijJXnW9dn5SyEU6oJnZ97n5Ge', 'admin', 'Admin', 'Warden', 'admin@hms.com', '1234567890');

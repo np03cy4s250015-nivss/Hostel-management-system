@@ -2,15 +2,7 @@
 // Hostel Management System - Main JavaScript
 // ============================================
 
-// Demo credentials
-const DEMO_USERS = {
-    student: { password: 'student123', role: 'user', name: 'John Student' },
-    admin: { password: 'admin123', role: 'admin', name: 'Admin Warden' }
-};
-
-// ============================================
-// Login Page Functionality
-// ============================================
+const API_BASE_URL = 'http://127.0.0.1:3000/api/auth';
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
@@ -19,55 +11,59 @@ document.addEventListener('DOMContentLoaded', function() {
         loginForm.addEventListener('submit', handleLogin);
     }
     
-    // Check if user is already logged in
     checkAuth();
 });
 
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
     
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
     const errorMessage = document.getElementById('errorMessage');
     
-    // Clear previous errors
     errorMessage.style.display = 'none';
     errorMessage.textContent = '';
     
-    // Validate inputs
     if (!username || !password) {
         showError('Please fill in all fields');
         return;
     }
     
-    // Check credentials
-    const user = DEMO_USERS[username];
-    
-    if (!user) {
-        showError('Invalid username or password');
-        return;
-    }
-    
-    if (user.password !== password) {
-        showError('Invalid username or password');
-        return;
-    }
-    
-    // Store user session
-    const session = {
-        username: username,
-        name: user.name,
-        role: user.role,
-        loginTime: new Date().toISOString()
-    };
-    
-    localStorage.setItem('hms_session', JSON.stringify(session));
-    
-    // Redirect to appropriate dashboard
-    if (user.role === 'admin') {
-        window.location.href = '../frontend/dashboard_admin.html';
-    } else {
-        window.location.href = '../frontend/dashboard_user.html';
+    try {
+        const response = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            showError(data.error || 'Login failed');
+            return;
+        }
+        
+        const session = {
+            username: data.user.username,
+            name: data.user.name,
+            role: data.user.role,
+            email: data.user.email,
+            token: data.token,
+            loginTime: new Date().toISOString()
+        };
+        
+        localStorage.setItem('hms_session', JSON.stringify(session));
+        
+        if (data.user.role === 'admin') {
+            window.location.href = '../frontend/dashboard_admin.html';
+        } else {
+            window.location.href = '../frontend/dashboard_user.html';
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showError('Unable to connect to server. Please try again.');
     }
 }
 
@@ -76,7 +72,6 @@ function showError(message) {
     errorMessage.textContent = message;
     errorMessage.style.display = 'block';
     
-    // Shake animation
     const loginCard = document.querySelector('.login-card');
     loginCard.style.animation = 'none';
     setTimeout(() => {
@@ -103,15 +98,10 @@ function togglePassword() {
     }
 }
 
-// ============================================
-// Authentication Helper Functions
-// ============================================
-
 function checkAuth() {
     const session = localStorage.getItem('hms_session');
     
     if (!session) {
-        // If on a protected page and not logged in, redirect to login
         const currentPage = window.location.pathname;
         if (currentPage.includes('dashboard')) {
             window.location.href = '../index.html';
@@ -119,9 +109,10 @@ function checkAuth() {
         return;
     }
     
-    // If on login page and already logged in, redirect to dashboard
+    const userData = JSON.parse(session);
+    const currentPage = window.location.pathname;
+    
     if (currentPage.includes('index.html') || currentPage.endsWith('/')) {
-        const userData = JSON.parse(session);
         if (userData.role === 'admin') {
             window.location.href = 'dashboard_admin.html';
         } else {
@@ -144,15 +135,17 @@ function getCurrentUser() {
     return JSON.parse(session);
 }
 
-// ============================================
-// Dashboard Common Functions
-// ============================================
+function getAuthToken() {
+    const session = localStorage.getItem('hms_session');
+    if (!session) return null;
+    const userData = JSON.parse(session);
+    return userData.token || null;
+}
 
 function initDashboard() {
     const user = getCurrentUser();
     if (!user) return;
     
-    // Update user info in sidebar
     const userName = document.getElementById('userName');
     const userRole = document.getElementById('userRole');
     const userInitials = document.getElementById('userInitials');
@@ -161,7 +154,6 @@ function initDashboard() {
     if (userRole) userRole.textContent = user.role === 'admin' ? 'Administrator' : 'Student';
     if (userInitials) userInitials.textContent = getInitials(user.name);
     
-    // Initialize sidebar toggle
     initSidebar();
 }
 
@@ -178,7 +170,6 @@ function initSidebar() {
             sidebar.classList.toggle('active');
         });
         
-        // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
             if (window.innerWidth <= 768) {
                 if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
@@ -188,7 +179,6 @@ function initSidebar() {
         });
     }
     
-    // Set active nav item
     const navItems = document.querySelectorAll('.nav-item');
     const currentPage = window.location.pathname.split('/').pop();
     
@@ -199,10 +189,6 @@ function initSidebar() {
         }
     });
 }
-
-// ============================================
-// Toast Notification System
-// ============================================
 
 function showToast(message, type = 'success') {
     const toastContainer = document.querySelector('.toast-container') || createToastContainer();
@@ -219,7 +205,6 @@ function showToast(message, type = 'success') {
     
     toastContainer.appendChild(toast);
     
-    // Auto remove after 3 seconds
     setTimeout(() => {
         toast.style.animation = 'toastSlide 0.3s ease reverse';
         setTimeout(() => toast.remove(), 300);
@@ -242,10 +227,6 @@ function getToastIcon(type) {
     return icons[type] || icons.success;
 }
 
-// ============================================
-// Modal Functions
-// ============================================
-
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -266,23 +247,17 @@ function closeAllModals() {
     });
 }
 
-// Close modal when clicking outside
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal')) {
         e.target.classList.remove('active');
     }
 });
 
-// Close modal on Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeAllModals();
     }
 });
-
-// ============================================
-// Utility Functions
-// ============================================
 
 function formatDate(date) {
     return new Date(date).toLocaleDateString('en-US', {
@@ -306,7 +281,6 @@ function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// Add shake animation CSS
 const style = document.createElement('style');
 style.textContent = `
     @keyframes shake {
