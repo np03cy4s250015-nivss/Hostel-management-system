@@ -54,12 +54,18 @@ async function handleLogin(e) {
             loginTime: new Date().toISOString()
         };
         
-        localStorage.setItem('hms_session', JSON.stringify(session));
+        const rememberMe = document.getElementById('remember')?.checked;
+        
+        if (rememberMe) {
+            localStorage.setItem('hms_session', JSON.stringify(session));
+        } else {
+            sessionStorage.setItem('hms_session', JSON.stringify(session));
+        }
         
         if (data.user.role === 'admin') {
-            window.location.href = '../frontend/dashboard_admin.html';
+            window.location.href = 'frontend/dashboard_admin.html';
         } else {
-            window.location.href = '../frontend/dashboard_user.html';
+            window.location.href = 'frontend/dashboard_user.html';
         }
     } catch (error) {
         console.error('Login error:', error);
@@ -99,7 +105,7 @@ function togglePassword() {
 }
 
 function checkAuth() {
-    const session = localStorage.getItem('hms_session');
+    let session = localStorage.getItem('hms_session') || sessionStorage.getItem('hms_session');
     
     if (!session) {
         const currentPage = window.location.pathname;
@@ -114,29 +120,33 @@ function checkAuth() {
     
     if (currentPage.includes('index.html') || currentPage.endsWith('/')) {
         if (userData.role === 'admin') {
-            window.location.href = 'dashboard_admin.html';
+            window.location.href = 'frontend/dashboard_admin.html';
         } else {
-            window.location.href = 'dashboard_user.html';
+            window.location.href = 'frontend/dashboard_user.html';
         }
+    } else if (currentPage.includes('dashboard')) {
+        // Already on a dashboard page - don't redirect
+        return;
     }
 }
 
 function logout() {
     localStorage.removeItem('hms_session');
-    window.location.href = 'index.html';
+    sessionStorage.removeItem('hms_session');
+    window.location.href = '../index.html';
 }
 
 function getCurrentUser() {
-    const session = localStorage.getItem('hms_session');
+    let session = localStorage.getItem('hms_session') || sessionStorage.getItem('hms_session');
     if (!session) {
-        window.location.href = 'index.html';
+        window.location.href = '../index.html';
         return null;
     }
     return JSON.parse(session);
 }
 
 function getAuthToken() {
-    const session = localStorage.getItem('hms_session');
+    let session = localStorage.getItem('hms_session') || sessionStorage.getItem('hms_session');
     if (!session) return null;
     const userData = JSON.parse(session);
     return userData.token || null;
