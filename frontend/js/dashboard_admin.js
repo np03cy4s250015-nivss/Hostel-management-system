@@ -2,145 +2,792 @@
 // Admin Dashboard Specific JavaScript
 // ============================================
 
-// Initialize dashboard when DOM is loaded
+const DATA_API_BASE_URL = 'http://127.0.0.1:3000/api/data';
+let roomsData = []; // Store rooms data for dropdown
+
 document.addEventListener('DOMContentLoaded', function() {
     initDashboard();
+    
+    // Setup floor change listener for room dropdown
+    const floorSelect = document.getElementById('studentFloor');
+    const roomSelect = document.getElementById('studentRoom');
+    
+    if (floorSelect && roomSelect) {
+        floorSelect.addEventListener('change', function() {
+            const selectedFloor = this.value;
+            filterRoomsByFloor(selectedFloor, roomSelect);
+        });
+    }
+    
     loadAdminData();
+    const hash = window.location.hash.slice(1) || 'dashboard';
+    showSection(hash);
 });
 
-// Load admin-specific data
-function loadAdminData() {
+window.addEventListener('hashchange', function() {
+    const hash = window.location.hash.slice(1) || 'dashboard';
+    showSection(hash);
+});
+
+function filterRoomsByFloor(floor, roomSelect) {
+    if (!floor) {
+        roomSelect.innerHTML = '<option value="">Select Room</option>';
+        return;
+    }
+    
+    // Filter rooms by floor and available status
+    const filteredRooms = roomsData.filter(r => r.floor === parseInt(floor) && r.status === 'available');
+    
+    roomSelect.innerHTML = '<option value="">Select Room</option>' +
+        filteredRooms.map(room => 
+            `<option value="${room.id}">Room ${room.room_number} (Capacity: ${room.capacity})</option>`
+        ).join('');
+}
+
+async function loadAdminData() {
     const user = getCurrentUser();
     if (!user) return;
     
-    // Simulate loading admin data
-    console.log('Loading admin data for:', user.username);
+    await Promise.all([
+        loadStats(),
+        loadStudents(),
+        loadRooms(),
+        loadComplaints(),
+        loadNotices()
+    ]);
 }
 
-// Add Student function
-function addStudent() {
+async function loadStats() {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/stats`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch stats');
+        const stats = await response.json();
+        
+        const totalStudentsEl = document.getElementById('totalStudents');
+        const occupiedRoomsEl = document.getElementById('occupiedRooms');
+        const pendingComplaintsEl = document.getElementById('pendingComplaints');
+        
+        if (totalStudentsEl) totalStudentsEl.textContent = stats.totalStudents || 0;
+        if (occupiedRoomsEl) occupiedRoomsEl.textContent = stats.occupiedRooms || 0;
+        if (pendingComplaintsEl) pendingComplaintsEl.textContent = stats.pendingComplaints || 0;
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+async function loadStudents() {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/students`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch students');
+        const students = await response.json();
+        studentsData = students;
+        
+        const tbody = document.getElementById('studentsTableBody');
+        if (!tbody) return;
+        
+        if (students.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No students found</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = students.map(s => `
+            <tr>
+                <td>#${s.admission_number}</td>
+                <td>${s.first_name} ${s.last_name}</td>
+                <td>${s.room_number || '-'}</td>
+                <td>${s.email}</td>
+                <td><span class="badge badge-success">Active</span></td>
+                <td>
+                    <div class="action-btns">
+                        <button class="action-btn view" title="View" onclick="viewStudent(${s.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="7" r="3"></circle>
+                            </svg>
+                        </button>
+                        <button class="action-btn edit" title="Edit" onclick="editStudent(${s.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button class="action-btn delete" title="Delete" onclick="deleteStudent(${s.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading students:', error);
+    }
+}
+
+async function loadRooms() {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/rooms`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch rooms');
+        const rooms = await response.json();
+        
+        // Store rooms globally for student form dropdown
+        roomsData = rooms;
+        
+        const tbody = document.getElementById('roomsTableBody');
+        if (!tbody) return;
+        
+        if (rooms.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No rooms found</td></tr>';
+            return;
+        }
+        
+        const statusMap = {
+            'available': '<span class="badge badge-info">Available</span>',
+            'full': '<span class="badge badge-success">Occupied</span>',
+            'maintenance': '<span class="badge badge-warning">Maintenance</span>'
+        };
+        
+        tbody.innerHTML = rooms.map(r => `
+            <tr>
+                <td>${r.room_number}</td>
+                <td>${r.floor}${getOrdinal(r.floor)} Floor</td>
+                <td>${r.capacity === 1 ? 'Single' : r.capacity === 2 ? 'Double' : 'Triple'}</td>
+                <td>${r.capacity}</td>
+                <td>${r.current_occupancy}</td>
+                <td>${statusMap[r.status] || r.status}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="action-btn edit" title="Edit" onclick="editRoom(${r.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button class="action-btn delete" title="Delete" onclick="deleteRoom(${r.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading rooms:', error);
+    }
+}
+
+async function loadComplaints() {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/complaints`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch complaints');
+        const complaints = await response.json();
+        
+        const tbody = document.getElementById('complaintsTableBody');
+        if (!tbody) return;
+        
+        if (complaints.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No complaints found</td></tr>';
+            return;
+        }
+        
+        const statusMap = {
+            'pending': '<span class="badge badge-danger">Pending</span>',
+            'in_progress': '<span class="badge badge-warning">In Progress</span>',
+            'resolved': '<span class="badge badge-success">Resolved</span>',
+            'rejected': '<span class="badge badge-secondary">Rejected</span>'
+        };
+        
+        tbody.innerHTML = complaints.map(c => `
+            <tr>
+                <td>#C${c.id}</td>
+                <td>${c.first_name} ${c.last_name}</td>
+                <td>${c.category}</td>
+                <td>${c.description.substring(0, 30)}...</td>
+                <td>${new Date(c.created_at).toLocaleDateString()}</td>
+                <td>${statusMap[c.status]}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="action-btn view" title="View" onclick="viewComplaint(${c.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                        <button class="action-btn edit" title="Update" onclick="updateComplaint(${c.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading complaints:', error);
+    }
+}
+
+async function loadNotices() {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/notices`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch notices');
+        const notices = await response.json();
+        
+        const noticeList = document.getElementById('noticesList');
+        if (!noticeList) return;
+        
+        if (notices.length === 0) {
+            noticeList.innerHTML = '<p style="text-align:center;padding:20px;color:#999;">No notices found</p>';
+            return;
+        }
+        
+        noticeList.innerHTML = notices.map(n => `
+            <div class="notice-item-admin">
+                <div class="notice-content">
+                    <h4>${n.title}</h4>
+                    <p>${n.content}</p>
+                    <span class="notice-meta">Posted on: ${new Date(n.created_at).toLocaleDateString()}</span>
+                </div>
+                <div class="action-btns">
+                    <button class="action-btn edit" title="Edit" onclick="editNotice(${n.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <button class="action-btn delete" title="Delete" onclick="deleteNotice(${n.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading notices:', error);
+    }
+}
+
+function getOrdinal(n) {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+}
+
+async function addStudent() {
     const name = document.getElementById('studentName').value;
-    const email = document.getElementById('studentEmail').value;
     const phone = document.getElementById('studentPhone').value;
-    const room = document.getElementById('studentRoom').value;
-    const block = document.getElementById('studentBlock').value;
-    const status = document.getElementById('studentStatus').value;
+    const roomId = document.getElementById('studentRoom').value;
+    const username = document.getElementById('studentUsername').value;
+    const password = document.getElementById('studentPassword').value;
     
-    if (!name || !email || !phone || !room || !block) {
+    if (!name || !phone || !roomId || !username || !password) {
         showToast('Please fill in all required fields', 'error');
         return;
     }
     
-    // Simulate adding student
-    console.log('Adding student:', { name, email, phone, room, block, status });
+    const nameParts = name.split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || firstName;
     
-    showToast('Student added successfully!', 'success');
-    closeModal('addStudentModal');
-    document.getElementById('addStudentForm').reset();
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/students`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                username,
+                password,
+                firstName,
+                lastName,
+                email: `${username}@hms.local`, // Auto-generate email from username
+                phone,
+                admissionNumber: 'STU' + Date.now(),
+                roomId: parseInt(roomId)
+            })
+        });
+        
+        if (!response.ok) throw new Error('Failed to add student');
+        
+        showToast('Student added successfully! Student can now login with provided credentials', 'success');
+        closeModal('addStudentModal');
+        document.getElementById('addStudentForm').reset();
+        loadStudents();
+    } catch (error) {
+        console.error('Error adding student:', error);
+        showToast('Failed to add student', 'error');
+    }
 }
 
-// Add Room function
-function addRoom() {
+let confirmCallback = null;
+
+function showConfirm(title, message, callback) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+    confirmCallback = callback;
+    openModal('confirmModal');
+}
+
+function executeConfirmAction() {
+    closeModal('confirmModal');
+    if (confirmCallback) {
+        confirmCallback();
+        confirmCallback = null;
+    }
+}
+
+async function deleteStudent(studentId) {
+    showConfirm('Delete Student', 'Are you sure you want to delete this student?', async () => {
+        try {
+            const response = await fetch(`${DATA_API_BASE_URL}/students/${studentId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+            });
+            
+            if (!response.ok) throw new Error('Failed to delete student');
+            
+            showToast('Student deleted successfully!', 'success');
+            loadStudents();
+            loadStats();
+        } catch (error) {
+            console.error('Error deleting student:', error);
+            showToast('Failed to delete student', 'error');
+        }
+    });
+}
+
+async function addRoom() {
     const roomNumber = document.getElementById('roomNumber').value;
-    const block = document.getElementById('roomBlock').value;
     const floor = document.getElementById('roomFloor').value;
-    const type = document.getElementById('roomType').value;
     const capacity = document.getElementById('roomCapacity').value;
+    const status = document.getElementById('roomStatus').value;
     
-    if (!roomNumber || !block || !floor || !type || !capacity) {
+    if (!roomNumber || !floor || !capacity || !status) {
         showToast('Please fill in all required fields', 'error');
         return;
     }
     
-    // Simulate adding room
-    console.log('Adding room:', { roomNumber, block, floor, type, capacity });
-    
-    showToast('Room added successfully!', 'success');
-    closeModal('addRoomModal');
-    document.getElementById('addRoomForm').reset();
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/rooms`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                roomNumber,
+                floor: parseInt(floor),
+                capacity: parseInt(capacity),
+                status
+            })
+        });
+        
+        if (!response.ok) throw new Error('Failed to add room');
+        
+        showToast('Room added successfully!', 'success');
+        closeModal('addRoomModal');
+        document.getElementById('addRoomForm').reset();
+        loadRooms();
+    } catch (error) {
+        console.error('Error adding room:', error);
+        showToast('Failed to add room', 'error');
+    }
 }
 
-// Add Notice function
-function addNotice() {
+async function deleteRoom(roomId) {
+    showConfirm('Delete Room', 'Are you sure you want to delete this room?', async () => {
+        try {
+            const response = await fetch(`${DATA_API_BASE_URL}/rooms/${roomId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+            });
+            
+            if (!response.ok) throw new Error('Failed to delete room');
+            
+            showToast('Room deleted successfully!', 'success');
+            loadRooms();
+            loadStats();
+        } catch (error) {
+            console.error('Error deleting room:', error);
+            showToast('Failed to delete room', 'error');
+        }
+    });
+}
+
+async function addNotice() {
     const title = document.getElementById('noticeTitle').value;
     const content = document.getElementById('noticeContent').value;
-    const block = document.getElementById('noticeBlock').value;
     
     if (!title || !content) {
         showToast('Please fill in all required fields', 'error');
         return;
     }
     
-    // Simulate adding notice
-    console.log('Adding notice:', { title, content, block });
+    const user = getCurrentUser();
     
-    showToast('Notice published successfully!', 'success');
-    closeModal('addNoticeModal');
-    document.getElementById('addNoticeForm').reset();
-}
-
-// Edit Student function
-function editStudent(studentId) {
-    console.log('Editing student:', studentId);
-    showToast('Edit functionality coming soon', 'warning');
-}
-
-// Delete Student function
-function deleteStudent(studentId) {
-    if (confirm('Are you sure you want to delete this student?')) {
-        console.log('Deleting student:', studentId);
-        showToast('Student deleted successfully!', 'success');
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/notices`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                title,
+                content,
+                priority: 'normal'
+            })
+        });
+        
+        if (!response.ok) throw new Error('Failed to add notice');
+        
+        showToast('Notice published successfully!', 'success');
+        closeModal('addNoticeModal');
+        document.getElementById('addNoticeForm').reset();
+        loadNotices();
+    } catch (error) {
+        console.error('Error adding notice:', error);
+        showToast('Failed to add notice', 'error');
     }
 }
 
-// Edit Room function
+async function deleteNotice(noticeId) {
+    showConfirm('Delete Notice', 'Are you sure you want to delete this notice?', async () => {
+        try {
+            const response = await fetch(`${DATA_API_BASE_URL}/notices/${noticeId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+            });
+            
+            if (!response.ok) throw new Error('Failed to delete notice');
+            
+            showToast('Notice deleted successfully!', 'success');
+            loadNotices();
+        } catch (error) {
+            console.error('Error deleting notice:', error);
+            showToast('Failed to delete notice', 'error');
+        }
+    });
+}
+
+async function updateComplaint(complaintId) {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/complaints/${complaintId}`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch complaint');
+        const complaint = await response.json();
+        
+        document.getElementById('updateComplaintId').value = complaint.id;
+        document.getElementById('updateComplaintStatus').value = complaint.status;
+        openModal('updateComplaintModal');
+    } catch (error) {
+        console.error('Error updating complaint:', error);
+        showToast('Failed to load complaint data', 'error');
+    }
+}
+
+async function saveComplaintStatus() {
+    const complaintId = document.getElementById('updateComplaintId').value;
+    const status = document.getElementById('updateComplaintStatus').value;
+    const resolutionNotes = document.getElementById('resolutionNotes').value;
+    
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/complaints/${complaintId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ status, resolutionNotes })
+        });
+        
+        if (!response.ok) throw new Error('Failed to update complaint');
+        
+        showToast('Complaint status updated!', 'success');
+        closeModal('updateComplaintModal');
+        loadComplaints();
+        loadStats();
+    } catch (error) {
+        console.error('Error updating complaint:', error);
+        showToast('Failed to update complaint', 'error');
+    }
+}
+
+async function viewStudent(studentId) {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/students/${studentId}`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch student');
+        const student = await response.json();
+        
+        const content = document.getElementById('viewStudentContent');
+        content.innerHTML = `
+            <div class="detail-item">
+                <label>Admission Number</label>
+                <span>${student.admission_number}</span>
+            </div>
+            <div class="detail-item">
+                <label>Full Name</label>
+                <span>${student.first_name} ${student.last_name}</span>
+            </div>
+            <div class="detail-item">
+                <label>Email</label>
+                <span>${student.email}</span>
+            </div>
+            <div class="detail-item">
+                <label>Phone</label>
+                <span>${student.phone}</span>
+            </div>
+            <div class="detail-item">
+                <label>Room Number</label>
+                <span>${student.room_number || 'Not Assigned'}</span>
+            </div>
+            <div class="detail-item">
+                <label>Floor</label>
+                <span>${student.floor ? student.floor + getOrdinal(student.floor) + ' Floor' : 'Not Assigned'}</span>
+            </div>
+            <div class="detail-item">
+                <label>Status</label>
+                <span><span class="badge badge-success">Active</span></span>
+            </div>
+        `;
+        openModal('viewStudentModal');
+    } catch (error) {
+        console.error('Error viewing student:', error);
+        showToast('Failed to load student details', 'error');
+    }
+}
+
+async function editStudent(studentId) {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/students/${studentId}`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch student');
+        const student = await response.json();
+        
+        document.getElementById('editStudentId').value = student.id;
+        document.getElementById('editStudentName').value = `${student.first_name} ${student.last_name}`;
+        document.getElementById('editStudentPhone').value = student.phone;
+        document.getElementById('editStudentStatus').value = 'active';
+        
+        const floorSelect = document.getElementById('editStudentFloor');
+        const roomSelect = document.getElementById('editStudentRoom');
+        
+        floorSelect.innerHTML = '<option value="">Select Floor</option>';
+        for (let i = 1; i <= 3; i++) {
+            floorSelect.innerHTML += `<option value="${i}">${i}${getOrdinal(i)} Floor</option>`;
+        }
+        
+        if (student.floor) {
+            floorSelect.value = student.floor;
+            const currentFloor = student.floor;
+            const availableRooms = roomsData.filter(r => r.floor === currentFloor && r.status === 'available');
+            const currentRoom = roomsData.find(r => r.room_number === student.room_number);
+            if (currentRoom && currentRoom.status === 'full') {
+                availableRooms.push(currentRoom);
+            }
+            roomSelect.innerHTML = '<option value="">Select Room</option>' +
+                availableRooms.map(r => `<option value="${r.id}">Room ${r.room_number} (${r.capacity})</option>`).join('');
+            roomSelect.value = currentRoom ? currentRoom.id : '';
+        } else {
+            filterRoomsByFloor('', roomSelect);
+        }
+        
+        floorSelect.addEventListener('change', function() {
+            filterRoomsByFloor(this.value, roomSelect);
+        });
+        
+        openModal('editStudentModal');
+    } catch (error) {
+        console.error('Error editing student:', error);
+        showToast('Failed to load student data', 'error');
+    }
+}
+
+async function saveStudent() {
+    const studentId = document.getElementById('editStudentId').value;
+    const name = document.getElementById('editStudentName').value;
+    const phone = document.getElementById('editStudentPhone').value;
+    const roomId = document.getElementById('editStudentRoom').value;
+    const status = document.getElementById('editStudentStatus').value;
+    
+    if (!name || !phone) {
+        showToast('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    const nameParts = name.split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || firstName;
+    
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/students/${studentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                firstName,
+                lastName,
+                phone,
+                roomId: roomId ? parseInt(roomId) : null,
+                status
+            })
+        });
+        
+        if (!response.ok) throw new Error('Failed to update student');
+        
+        showToast('Student updated successfully!', 'success');
+        closeModal('editStudentModal');
+        loadStudents();
+        loadStats();
+    } catch (error) {
+        console.error('Error saving student:', error);
+        showToast('Failed to update student', 'error');
+    }
+}
+
 function editRoom(roomId) {
     console.log('Editing room:', roomId);
     showToast('Edit functionality coming soon', 'warning');
 }
 
-// Delete Room function
-function deleteRoom(roomId) {
-    if (confirm('Are you sure you want to delete this room?')) {
-        console.log('Deleting room:', roomId);
-        showToast('Room deleted successfully!', 'success');
+async function viewComplaint(complaintId) {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/complaints/${complaintId}`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch complaint');
+        const complaint = await response.json();
+        
+        const statusMap = {
+            'pending': '<span class="badge badge-danger">Pending</span>',
+            'in_progress': '<span class="badge badge-warning">In Progress</span>',
+            'resolved': '<span class="badge badge-success">Resolved</span>',
+            'rejected': '<span class="badge badge-secondary">Rejected</span>'
+        };
+        
+        const content = document.getElementById('viewComplaintContent');
+        content.innerHTML = `
+            <div class="detail-item">
+                <label>Complaint ID</label>
+                <span>#C${complaint.id}</span>
+            </div>
+            <div class="detail-item">
+                <label>Student Name</label>
+                <span>${complaint.first_name} ${complaint.last_name}</span>
+            </div>
+            <div class="detail-item">
+                <label>Email</label>
+                <span>${complaint.email}</span>
+            </div>
+            <div class="detail-item">
+                <label>Category</label>
+                <span>${complaint.category}</span>
+            </div>
+            <div class="detail-item" style="grid-column: span 2;">
+                <label>Description</label>
+                <span>${complaint.description}</span>
+            </div>
+            <div class="detail-item">
+                <label>Status</label>
+                <span>${statusMap[complaint.status]}</span>
+            </div>
+            <div class="detail-item">
+                <label>Date</label>
+                <span>${new Date(complaint.created_at).toLocaleDateString()}</span>
+            </div>
+            ${complaint.resolution_notes ? `
+            <div class="detail-item" style="grid-column: span 2;">
+                <label>Resolution Notes</label>
+                <span>${complaint.resolution_notes}</span>
+            </div>
+            ` : ''}
+        `;
+        openModal('viewComplaintModal');
+    } catch (error) {
+        console.error('Error viewing complaint:', error);
+        showToast('Failed to load complaint details', 'error');
     }
 }
 
-// Update Complaint Status
-function updateComplaint(complaintId) {
-    console.log('Updating complaint:', complaintId);
-    showToast('Complaint status updated!', 'success');
-}
-
-// Edit Notice function
 function editNotice(noticeId) {
     console.log('Editing notice:', noticeId);
     showToast('Edit functionality coming soon', 'warning');
 }
 
-// Delete Notice function
-function deleteNotice(noticeId) {
-    if (confirm('Are you sure you want to delete this notice?')) {
-        console.log('Deleting notice:', noticeId);
-        showToast('Notice deleted successfully!', 'success');
-    }
-}
-
-// Export Report function
 function exportReport() {
     console.log('Exporting report...');
     showToast('Report exported successfully!', 'success');
 }
 
-// View Student Details
-function viewStudent(studentId) {
-    console.log('Viewing student details:', studentId);
-    openModal('viewStudentModal');
-}
-
-// View Complaint Details
-function viewComplaint(complaintId) {
-    console.log('Viewing complaint:', complaintId);
-    openModal('viewComplaintModal');
+function showSection(section) {
+    if (!section) return;
+    
+    window.location.hash = section;
+    
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => item.classList.remove('active'));
+    
+    const activeNav = document.querySelector(`.nav-item[onclick*="'${section}'"]`);
+    if (activeNav) {
+        activeNav.classList.add('active');
+    }
+    
+    const statsGrid = document.querySelector('.stats-grid');
+    const noticesSection = document.getElementById('notices');
+    const studentsSection = document.getElementById('students');
+    const roomsSection = document.getElementById('rooms');
+    const complaintsSection = document.getElementById('complaints');
+    const settingsSection = document.getElementById('settings');
+    
+    if (section === 'dashboard') {
+        if (statsGrid) statsGrid.style.display = 'grid';
+        if (noticesSection) noticesSection.style.display = 'block';
+        if (studentsSection) studentsSection.style.display = 'none';
+        if (roomsSection) roomsSection.style.display = 'none';
+        if (complaintsSection) complaintsSection.style.display = 'none';
+        if (settingsSection) settingsSection.style.display = 'none';
+    } else {
+        if (statsGrid) statsGrid.style.display = 'none';
+        if (noticesSection) noticesSection.style.display = 'none';
+        if (studentsSection) studentsSection.style.display = 'none';
+        if (roomsSection) roomsSection.style.display = 'none';
+        if (complaintsSection) complaintsSection.style.display = 'none';
+        if (settingsSection) settingsSection.style.display = 'none';
+        
+        if (section === 'students' && studentsSection) {
+            studentsSection.style.display = 'block';
+        } else if (section === 'rooms' && roomsSection) {
+            roomsSection.style.display = 'block';
+        } else if (section === 'complaints' && complaintsSection) {
+            complaintsSection.style.display = 'block';
+        } else if (section === 'notices' && noticesSection) {
+            noticesSection.style.display = 'block';
+        } else if (section === 'settings' && settingsSection) {
+            settingsSection.style.display = 'block';
+        }
+    }
 }

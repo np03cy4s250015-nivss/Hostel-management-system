@@ -63,7 +63,7 @@ async function handleLogin(e) {
         }
         
         if (data.user.role === 'admin') {
-            window.location.href = 'frontend/dashboard_admin.html';
+            window.location.href = 'frontend/dashboard_admin.html#dashboard';
         } else {
             window.location.href = 'frontend/dashboard_user.html';
         }
@@ -120,13 +120,14 @@ function checkAuth() {
     
     if (currentPage.includes('index.html') || currentPage.endsWith('/')) {
         if (userData.role === 'admin') {
-            window.location.href = 'frontend/dashboard_admin.html';
+            window.location.href = 'frontend/dashboard_admin.html#dashboard';
         } else {
             window.location.href = 'frontend/dashboard_user.html';
         }
     } else if (currentPage.includes('dashboard')) {
-        // Already on a dashboard page - don't redirect
-        return;
+        if (!window.location.hash) {
+            window.location.hash = 'dashboard';
+        }
     }
 }
 
@@ -241,6 +242,16 @@ function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.add('active');
+        
+        // Reset form and room dropdown when opening add student modal
+        if (modalId === 'addStudentModal') {
+            const form = document.getElementById('addStudentForm');
+            if (form) form.reset();
+            const roomSelect = document.getElementById('studentRoom');
+            if (roomSelect) {
+                roomSelect.innerHTML = '<option value="">Select Room</option>';
+            }
+        }
     }
 }
 

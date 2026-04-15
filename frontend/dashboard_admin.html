@@ -17,7 +17,7 @@
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <span class="nav-section-title">Main</span>
-                    <a href="#" class="nav-item active">
+                    <a href="#" class="nav-item active" onclick="showSection('dashboard')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="7" height="7"></rect>
                             <rect x="14" y="3" width="7" height="7"></rect>
@@ -28,52 +28,35 @@
                     </a>
                 </div>
                 
-                <div class="nav-section">
-                    <span class="nav-section-title">Management</span>
-                    <a href="#students" class="nav-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                        </svg>
-                        <span>Students</span>
-                    </a>
-                    <a href="#rooms" class="nav-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                        </svg>
-                        <span>Rooms</span>
-                    </a>
-                    <a href="#complaints" class="nav-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                        <span>Complaints</span>
-                    </a>
-                    <a href="#maintenance" class="nav-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                        </svg>
-                        <span>Maintenance</span>
-                    </a>
-                </div>
-                
-                <div class="nav-section">
-                    <span class="nav-section-title">Finance</span>
-                    <a href="#payments" class="nav-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                            <line x1="1" y1="10" x2="23" y2="10"></line>
-                        </svg>
-                        <span>Payments</span>
-                    </a>
-                </div>
+<div class="nav-section">
+                     <span class="nav-section-title">Management</span>
+                     <a href="#students" class="nav-item" onclick="showSection('students')">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                             <circle cx="9" cy="7" r="4"></circle>
+                             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                         </svg>
+                         <span>Students</span>
+                     </a>
+                     <a href="#rooms" class="nav-item" onclick="showSection('rooms')">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                             <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                         </svg>
+                         <span>Rooms</span>
+                     </a>
+                     <a href="#complaints" class="nav-item" onclick="showSection('complaints')">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                         </svg>
+                         <span>Complaints</span>
+                     </a>
+                 </div>
                 
                 <div class="nav-section">
                     <span class="nav-section-title">Communication</span>
-                    <a href="#notices" class="nav-item">
+                    <a href="#notices" class="nav-item" onclick="showSection('notices')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
@@ -86,7 +69,7 @@
                 
                 <div class="nav-section">
                     <span class="nav-section-title">Settings</span>
-                    <a href="#settings" class="nav-item">
+                    <a href="#settings" class="nav-item" onclick="showSection('settings')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="3"></circle>
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -146,53 +129,40 @@
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon pink">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                            </svg>
+                            <img src="assets/icons/users.png" alt="Total Students">
                         </div>
                         <div class="stat-details">
-                            <h3>248</h3>
+                            <h3 id="totalStudents">0</h3>
                             <p>Total Students</p>
                         </div>
                     </div>
                     
                     <div class="stat-card">
                         <div class="stat-icon green">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                            </svg>
+                            <img src="assets/icons/building.png" alt="Rooms Occupied">
                         </div>
                         <div class="stat-details">
-                            <h3>120</h3>
+                            <h3 id="occupiedRooms">0</h3>
                             <p>Rooms Occupied</p>
                         </div>
                     </div>
                     
                     <div class="stat-card">
                         <div class="stat-icon orange">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                            </svg>
+                            <img src="assets/icons/chat.png" alt="Pending Complaints">
                         </div>
                         <div class="stat-details">
-                            <h3>12</h3>
+                            <h3 id="pendingComplaints">0</h3>
                             <p>Pending Complaints</p>
                         </div>
                     </div>
                     
                     <div class="stat-card">
                         <div class="stat-icon red">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                <line x1="1" y1="10" x2="23" y2="10"></line>
-                            </svg>
+                            <img src="assets/icons/credit-card.png" alt="Monthly Revenue">
                         </div>
                         <div class="stat-details">
-                            <h3>$124,000</h3>
+                            <h3>-</h3>
                             <p>Monthly Revenue</p>
                         </div>
                     </div>
@@ -218,102 +188,14 @@
                                         <th>Student ID</th>
                                         <th>Name</th>
                                         <th>Room</th>
-                                        <th>Block</th>
                                         <th>Contact</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="studentsTableBody">
                                     <tr>
-                                        <td>#STU001</td>
-                                        <td>John Smith</td>
-                                        <td>204</td>
-                                        <td>A</td>
-                                        <td>john@email.com</td>
-                                        <td><span class="badge badge-success">Active</span></td>
-                                        <td>
-                                            <div class="action-btns">
-                                                <button class="action-btn view" title="View">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                        <circle cx="12" cy="12" r="3"></circle>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn edit" title="Edit">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn delete" title="Delete">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>#STU002</td>
-                                        <td>Mike Johnson</td>
-                                        <td>204</td>
-                                        <td>A</td>
-                                        <td>mike@email.com</td>
-                                        <td><span class="badge badge-success">Active</span></td>
-                                        <td>
-                                            <div class="action-btns">
-                                                <button class="action-btn view" title="View">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                        <circle cx="12" cy="12" r="3"></circle>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn edit" title="Edit">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn delete" title="Delete">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>#STU003</td>
-                                        <td>Sarah Williams</td>
-                                        <td>305</td>
-                                        <td>B</td>
-                                        <td>sarah@email.com</td>
-                                        <td><span class="badge badge-warning">Pending</span></td>
-                                        <td>
-                                            <div class="action-btns">
-                                                <button class="action-btn view" title="View">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                        <circle cx="12" cy="12" r="3"></circle>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn edit" title="Edit">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn delete" title="Delete">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
+                                        <td colspan="6" style="text-align:center">Loading...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -339,7 +221,6 @@
                                 <thead>
                                     <tr>
                                         <th>Room No.</th>
-                                        <th>Block</th>
                                         <th>Floor</th>
                                         <th>Type</th>
                                         <th>Capacity</th>
@@ -348,106 +229,9 @@
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="roomsTableBody">
                                     <tr>
-                                        <td>101</td>
-                                        <td>A</td>
-                                        <td>1st</td>
-                                        <td>Single</td>
-                                        <td>1</td>
-                                        <td>1</td>
-                                        <td><span class="badge badge-success">Occupied</span></td>
-                                        <td>
-                                            <div class="action-btns">
-                                                <button class="action-btn edit" title="Edit">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn delete" title="Delete">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>204</td>
-                                        <td>A</td>
-                                        <td>2nd</td>
-                                        <td>Double</td>
-                                        <td>2</td>
-                                        <td>2</td>
-                                        <td><span class="badge badge-success">Occupied</span></td>
-                                        <td>
-                                            <div class="action-btns">
-                                                <button class="action-btn edit" title="Edit">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn delete" title="Delete">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>305</td>
-                                        <td>B</td>
-                                        <td>3rd</td>
-                                        <td>Double</td>
-                                        <td>2</td>
-                                        <td>1</td>
-                                        <td><span class="badge badge-info">Available</span></td>
-                                        <td>
-                                            <div class="action-btns">
-                                                <button class="action-btn edit" title="Edit">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn delete" title="Delete">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>401</td>
-                                        <td>C</td>
-                                        <td>4th</td>
-                                        <td>Triple</td>
-                                        <td>3</td>
-                                        <td>0</td>
-                                        <td><span class="badge badge-warning">Maintenance</span></td>
-                                        <td>
-                                            <div class="action-btns">
-                                                <button class="action-btn edit" title="Edit">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn delete" title="Delete">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
+                                        <td colspan="7" style="text-align:center">Loading...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -474,88 +258,13 @@
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="complaintsTableBody">
                                     <tr>
-                                        <td>#C001</td>
-                                        <td>John Smith</td>
-                                        <td>Plumbing</td>
-                                        <td>Leaking faucet in bathroom</td>
-                                        <td>Mar 30, 2024</td>
-                                        <td><span class="badge badge-warning">In Progress</span></td>
-                                        <td>
-                                            <div class="action-btns">
-                                                <button class="action-btn view" title="View">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                        <circle cx="12" cy="12" r="3"></circle>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn edit" title="Update">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>#C002</td>
-                                        <td>Mike Johnson</td>
-                                        <td>Electrical</td>
-                                        <td>Fan not working properly</td>
-                                        <td>Mar 28, 2024</td>
-                                        <td><span class="badge badge-danger">Pending</span></td>
-                                        <td>
-                                            <div class="action-btns">
-                                                <button class="action-btn view" title="View">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                        <circle cx="12" cy="12" r="3"></circle>
-                                                    </svg>
-                                                </button>
-                                                <button class="action-btn edit" title="Update">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>#C003</td>
-                                        <td>Sarah Williams</td>
-                                        <td>Furniture</td>
-                                        <td>Broken chair in room</td>
-                                        <td>Mar 25, 2024</td>
-                                        <td><span class="badge badge-success">Resolved</span></td>
-                                        <td>
-                                            <div class="action-btns">
-                                                <button class="action-btn view" title="View">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                        <circle cx="12" cy="12" r="3"></circle>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
+                                        <td colspan="7" style="text-align:center">Loading...</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Payments Section -->
-                <div class="card" id="payments">
-                    <div class="card-header">
-                        <h3>Payment Overview</h3>
-                    </div>
-                    <div class="card-body" style="text-align: center; padding: 60px 20px;">
-                        <img src="https://pngimg.com/d/under_construction_PNG44.png" alt="Under Construction" style="max-width: 100px; height: auto; margin-bottom: 20px;">
-                        <h4 style="margin-top: 20px; color: #666;">Under Construction</h4>
-                        <p style="color: #999;">This section is currently being built. Please check back later.</p>
                     </div>
                 </div>
                 
@@ -572,54 +281,101 @@
                         </button>
                     </div>
                     <div class="card-body">
-                        <div class="notice-list-admin">
-                            <div class="notice-item-admin">
-                                <div class="notice-content">
-                                    <h4>Water Supply Interruption</h4>
-                                    <p>Water supply will be interrupted on April 5th from 10 AM to 2 PM for maintenance work.</p>
-                                    <span class="notice-meta">Posted on: Apr 01, 2024 | Block: All</span>
-                                </div>
-                                <div class="action-btns">
-                                    <button class="action-btn edit" title="Edit">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                        </svg>
-                                    </button>
-                                    <button class="action-btn delete" title="Delete">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="notice-item-admin">
-                                <div class="notice-content">
-                                    <h4>Monthly Fee Payment Reminder</h4>
-                                    <p>April monthly fee payment due date is April 10th. Please pay on time to avoid late fees.</p>
-                                    <span class="notice-meta">Posted on: Mar 28, 2024 | Block: All</span>
-                                </div>
-                                <div class="action-btns">
-                                    <button class="action-btn edit" title="Edit">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                        </svg>
-                                    </button>
-                                    <button class="action-btn delete" title="Delete">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="notice-list-admin" id="noticesList">
+                            <p style="text-align:center;padding:20px;color:#999;">Loading...</p>
+                        </div>
+                    </div>
+</div>
+                
+                <!-- Settings Section -->
+                <div class="card" id="settings">
+                    <div class="card-header">
+                        <h3>Settings</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="under-construction">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.2 2.2 0 0 1-3.12-3.12l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                            </svg>
+                            <h2>Under Construction</h2>
+                            <p>Settings page coming soon</p>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
+    </div>
+    
+    <!-- View Student Modal -->
+    <div class="modal" id="viewStudentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Student Details</h3>
+                <button class="modal-close" onclick="closeModal('viewStudentModal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid" id="viewStudentContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('viewStudentModal')">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Student Modal -->
+    <div class="modal" id="editStudentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Student</h3>
+                <button class="modal-close" onclick="closeModal('editStudentModal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editStudentForm">
+                    <input type="hidden" id="editStudentId">
+                    <div class="form-row">
+                        <div class="form-group-dash">
+                            <label for="editStudentName">Full Name</label>
+                            <input type="text" id="editStudentName" required>
+                        </div>
+                        <div class="form-group-dash">
+                            <label for="editStudentPhone">Phone</label>
+                            <input type="tel" id="editStudentPhone" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group-dash">
+                            <label for="editStudentFloor">Floor</label>
+                            <select id="editStudentFloor" required>
+                                <option value="">Select Floor</option>
+                                <option value="1">1st Floor</option>
+                                <option value="2">2nd Floor</option>
+                                <option value="3">3rd Floor</option>
+                            </select>
+                        </div>
+                        <div class="form-group-dash">
+                            <label for="editStudentRoom">Room Number</label>
+                            <select id="editStudentRoom" required>
+                                <option value="">Select Room</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editStudentModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveStudent()">Save Changes</button>
+            </div>
+        </div>
     </div>
     
     <!-- Add Student Modal -->
@@ -642,41 +398,35 @@
                             <input type="text" id="studentName" placeholder="Enter full name" required>
                         </div>
                         <div class="form-group-dash">
-                            <label for="studentEmail">Email</label>
-                            <input type="email" id="studentEmail" placeholder="Enter email" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group-dash">
                             <label for="studentPhone">Phone</label>
                             <input type="tel" id="studentPhone" placeholder="Enter phone number" required>
                         </div>
+                    </div>
+<div class="form-row">
                         <div class="form-group-dash">
-                            <label for="studentRoom">Room Number</label>
+                            <label for="studentFloor">Floor</label>
+                            <select id="studentFloor" required>
+                                <option value="">Select Floor</option>
+                                <option value="1">1st Floor</option>
+                                <option value="2">2nd Floor</option>
+                                <option value="3">3rd Floor</option>
+                            </select>
+                        </div>
+                        <div class="form-group-dash">
+                            <label for="studentRoom">Room Number (1-10)</label>
                             <select id="studentRoom" required>
                                 <option value="">Select Room</option>
-                                <option value="101">101 - Block A</option>
-                                <option value="204">204 - Block A</option>
-                                <option value="305">305 - Block B</option>
                             </select>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group-dash">
-                            <label for="studentBlock">Block</label>
-                            <select id="studentBlock" required>
-                                <option value="">Select Block</option>
-                                <option value="A">Block A</option>
-                                <option value="B">Block B</option>
-                                <option value="C">Block C</option>
-                            </select>
+                            <label for="studentUsername">Username (for login)</label>
+                            <input type="text" id="studentUsername" placeholder="Choose username" required>
                         </div>
                         <div class="form-group-dash">
-                            <label for="studentStatus">Status</label>
-                            <select id="studentStatus" required>
-                                <option value="active">Active</option>
-                                <option value="pending">Pending</option>
-                            </select>
+                            <label for="studentPassword">Password (for login)</label>
+                            <input type="password" id="studentPassword" placeholder="Choose password" required>
                         </div>
                     </div>
                 </form>
@@ -708,33 +458,26 @@
                             <input type="text" id="roomNumber" placeholder="Enter room number" required>
                         </div>
                         <div class="form-group-dash">
-                            <label for="roomBlock">Block</label>
-                            <select id="roomBlock" required>
-                                <option value="">Select Block</option>
-                                <option value="A">Block A</option>
-                                <option value="B">Block B</option>
-                                <option value="C">Block C</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group-dash">
                             <label for="roomFloor">Floor</label>
                             <select id="roomFloor" required>
                                 <option value="">Select Floor</option>
                                 <option value="1">1st Floor</option>
                                 <option value="2">2nd Floor</option>
                                 <option value="3">3rd Floor</option>
-                                <option value="4">4th Floor</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group-dash">
-                            <label for="roomType">Room Type</label>
-                            <select id="roomType" required>
-                                <option value="">Select Type</option>
-                                <option value="single">Single</option>
-                                <option value="double">Double</option>
-                                <option value="triple">Triple</option>
+                            <label for="roomCapacity">Capacity</label>
+                            <input type="number" id="roomCapacity" min="1" max="4" placeholder="Enter capacity" required>
+                        </div>
+                        <div class="form-group-dash">
+                            <label for="roomStatus">Status</label>
+                            <select id="roomStatus" required>
+                                <option value="available">Available</option>
+                                <option value="full">Full</option>
+                                <option value="maintenance">Maintenance</option>
                             </select>
                         </div>
                     </div>
@@ -747,6 +490,86 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('addRoomModal')">Cancel</button>
                 <button class="btn btn-primary" onclick="addRoom()">Add Room</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirm Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 id="confirmTitle">Confirm Action</h3>
+                <button class="modal-close" onclick="closeModal('confirmModal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage" style="text-align: center; padding: 10px 0;">Are you sure?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
+                <button class="btn btn-danger" id="confirmActionBtn" onclick="executeConfirmAction()">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- View Complaint Modal -->
+    <div class="modal" id="viewComplaintModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Complaint Details</h3>
+                <button class="modal-close" onclick="closeModal('viewComplaintModal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid" id="viewComplaintContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('viewComplaintModal')">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Update Complaint Status Modal -->
+    <div class="modal" id="updateComplaintModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Update Complaint Status</h3>
+                <button class="modal-close" onclick="closeModal('updateComplaintModal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="updateComplaintForm">
+                    <input type="hidden" id="updateComplaintId">
+                    <div class="form-group-dash">
+                        <label for="updateComplaintStatus">New Status</label>
+                        <select id="updateComplaintStatus" required>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="form-group-dash">
+                        <label for="resolutionNotes">Resolution Notes</label>
+                        <textarea id="resolutionNotes" rows="3" placeholder="Enter resolution notes (optional)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('updateComplaintModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveComplaintStatus()">Update</button>
             </div>
         </div>
     </div>
@@ -772,15 +595,6 @@
                     <div class="form-group-dash">
                         <label for="noticeContent">Content</label>
                         <textarea id="noticeContent" rows="4" placeholder="Enter notice content" required></textarea>
-                    </div>
-                    <div class="form-group-dash">
-                        <label for="noticeBlock">Target Block</label>
-                        <select id="noticeBlock" required>
-                            <option value="all">All Blocks</option>
-                            <option value="A">Block A</option>
-                            <option value="B">Block B</option>
-                            <option value="C">Block C</option>
-                        </select>
                     </div>
                 </form>
             </div>

@@ -14,87 +14,38 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    phone VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    phone VARCHAR(20)
 );
 
--- Blocks table
-CREATE TABLE IF NOT EXISTS blocks (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    total_rooms INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Rooms table
+-- Rooms table (no blocks - just floors)
 CREATE TABLE IF NOT EXISTS rooms (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    block_id INT NOT NULL,
-    room_number VARCHAR(20) NOT NULL,
+    room_number VARCHAR(20) NOT NULL UNIQUE,
     floor INT NOT NULL,
     capacity INT NOT NULL,
     current_occupancy INT DEFAULT 0,
-    status ENUM('available', 'full', 'maintenance') DEFAULT 'available',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (block_id) REFERENCES blocks(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_room_block (block_id, room_number)
+    status ENUM('available', 'full', 'maintenance') DEFAULT 'available'
 );
 
--- Students table (additional student info)
+-- Students table
 CREATE TABLE IF NOT EXISTS students (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    room_id INT,
+    room_id INT DEFAULT NULL,
     admission_number VARCHAR(50) UNIQUE NOT NULL,
-    course VARCHAR(100),
-    year_of_study INT,
-    guardian_name VARCHAR(100),
-    guardian_phone VARCHAR(20),
-    address TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
 );
 
--- Room allocations table
-CREATE TABLE IF NOT EXISTS room_allocations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
-    room_id INT NOT NULL,
-    allocation_date DATE NOT NULL,
-    status ENUM('active', 'transferred', 'left') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-    FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
-);
-
--- Notices table
+-- Notices table (no target_block - removed blocks)
 CREATE TABLE IF NOT EXISTS notices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     content TEXT NOT NULL,
     posted_by INT NOT NULL,
-    target_block_id INT,
     priority ENUM('normal', 'important', 'urgent') DEFAULT 'normal',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATE,
-    FOREIGN KEY (posted_by) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (target_block_id) REFERENCES blocks(id) ON DELETE SET NULL
-);
-
--- Payments table
-CREATE TABLE IF NOT EXISTS payments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL,
-    month VARCHAR(20) NOT NULL,
-    year INT NOT NULL,
-    payment_date DATE,
-    status ENUM('pending', 'paid', 'failed', 'refunded') DEFAULT 'pending',
-    transaction_id VARCHAR(100) UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    FOREIGN KEY (posted_by) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Complaints table
@@ -104,25 +55,30 @@ CREATE TABLE IF NOT EXISTS complaints (
     category VARCHAR(50) NOT NULL,
     description TEXT NOT NULL,
     status ENUM('pending', 'in_progress', 'resolved', 'rejected') DEFAULT 'pending',
-    resolved_by INT,
     resolution_notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-    FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 );
 
--- Amenities table
-CREATE TABLE IF NOT EXISTS amenities (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    block_id INT,
-    status ENUM('available', 'unavailable') DEFAULT 'available',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (block_id) REFERENCES blocks(id) ON DELETE SET NULL
-);
+-- Insert rooms: 3 floors × 10 rooms = 30 total rooms
+-- Floor 1: 101-110, Floor 2: 201-210, Floor 3: 301-310
+INSERT INTO rooms (room_number, floor, capacity, status) VALUES
+-- Floor 1
+('101', 1, 2, 'available'), ('102', 1, 2, 'available'), ('103', 1, 2, 'available'),
+('104', 1, 2, 'available'), ('105', 1, 2, 'available'), ('106', 1, 2, 'available'),
+('107', 1, 2, 'available'), ('108', 1, 2, 'available'), ('109', 1, 2, 'available'),
+('110', 1, 2, 'available'),
+-- Floor 2
+('201', 2, 2, 'available'), ('202', 2, 2, 'available'), ('203', 2, 2, 'available'),
+('204', 2, 2, 'available'), ('205', 2, 2, 'available'), ('206', 2, 2, 'available'),
+('207', 2, 2, 'available'), ('208', 2, 2, 'available'), ('209', 2, 2, 'available'),
+('210', 2, 2, 'available'),
+-- Floor 3
+('301', 3, 2, 'available'), ('302', 3, 2, 'available'), ('303', 3, 2, 'available'),
+('304', 3, 2, 'available'), ('305', 3, 2, 'available'), ('306', 3, 2, 'available'),
+('307', 3, 2, 'available'), ('308', 3, 2, 'available'), ('309', 3, 2, 'available'),
+('310', 3, 2, 'available');
 
--- Insert default admin user (password: admin123)
+-- Default admin user (password: admin123)
 INSERT INTO users (username, password, role, first_name, last_name, email, phone) 
 VALUES ('admin', '$2b$10$0McFV9JvPsbarUbjzB9Tf.J.bJrnijJXnW9dn5SyEU6oJnZ97n5Ge', 'admin', 'Admin', 'Warden', 'admin@hms.com', '1234567890');

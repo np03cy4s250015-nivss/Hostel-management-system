@@ -17,7 +17,7 @@
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <span class="nav-section-title">Main</span>
-                    <a href="#" class="nav-item active">
+                    <a href="#" class="nav-item active" onclick="showSection('dashboard')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="7" height="7"></rect>
                             <rect x="14" y="3" width="7" height="7"></rect>
@@ -26,48 +26,28 @@
                         </svg>
                         <span>Dashboard</span>
                     </a>
-                    <a href="#my-room" class="nav-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                        </svg>
-                        <span>My Room</span>
-                    </a>
                 </div>
                 
                 <div class="nav-section">
                     <span class="nav-section-title">Services</span>
-                    <a href="#complaints" class="nav-item">
+                    <a href="#complaints" class="nav-item" onclick="showSection('complaints')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                         </svg>
                         <span>Complaints</span>
                     </a>
-                    <a href="#maintenance" class="nav-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                        </svg>
-                        <span>Maintenance</span>
-                    </a>
-                    <a href="#payments" class="nav-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                            <line x1="1" y1="10" x2="23" y2="10"></line>
-                        </svg>
-                        <span>Payments</span>
-                    </a>
                 </div>
                 
                 <div class="nav-section">
                     <span class="nav-section-title">Account</span>
-                    <a href="#profile" class="nav-item">
+                    <a href="#profile" class="nav-item" onclick="showSection('profile')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                             <circle cx="12" cy="7" r="4"></circle>
                         </svg>
                         <span>My Profile</span>
                     </a>
-                    <a href="#notices" class="nav-item">
+                    <a href="#notices" class="nav-item" onclick="showSection('notices')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
@@ -130,23 +110,27 @@
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon pink">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                            </svg>
+                            <img src="assets/icons/room.png" alt="Room">
                         </div>
                         <div class="stat-details">
-                            <h3>Room 204</h3>
-                            <p>Block A, 2nd Floor</p>
+                            <h3 id="roomNumberStat">Not Assigned</h3>
+                            <p>Room Number</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <img src="assets/icons/floor.png" alt="Floor">
+                        </div>
+                        <div class="stat-details">
+                            <h3 id="floorStat">-</h3>
+                            <p>Floor</p>
                         </div>
                     </div>
                     
                     <div class="stat-card">
                         <div class="stat-icon green">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                <line x1="1" y1="10" x2="23" y2="10"></line>
-                            </svg>
+                            <img src="assets/icons/fee.png" alt="Fee">
                         </div>
                         <div class="stat-details">
                             <h3>Paid</h3>
@@ -156,101 +140,65 @@
                     
                     <div class="stat-card">
                         <div class="stat-icon orange">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                            </svg>
+                            <img src="assets/icons/chat.png" alt="Complaints">
                         </div>
                         <div class="stat-details">
-                            <h3>1 Active</h3>
+                            <h3 id="openComplaintsCount">0</h3>
                             <p>Open Complaints</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon red">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
-                            </svg>
-                        </div>
-                        <div class="stat-details">
-                            <h3>0 Pending</h3>
-                            <p>Maintenance Requests</p>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Room Details Section -->
-                <div class="grid-2">
-                    <div class="card" id="my-room">
-                        <div class="card-header">
-                            <h3>My Room Details</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="room-info">
-                                <div class="room-detail">
-                                    <span class="label">Room Number:</span>
-                                    <span class="value">204</span>
-                                </div>
-                                <div class="room-detail">
-                                    <span class="label">Block:</span>
-                                    <span class="value">A</span>
-                                </div>
-                                <div class="room-detail">
-                                    <span class="label">Floor:</span>
-                                    <span class="value">2nd Floor</span>
-                                </div>
-                                <div class="room-detail">
-                                    <span class="label">Room Type:</span>
-                                    <span class="value">Double Sharing</span>
-                                </div>
-                                <div class="room-detail">
-                                    <span class="label">Roommate:</span>
-                                    <span class="value">Mike Johnson</span>
-                                </div>
-                                <div class="room-detail">
-                                    <span class="label">Monthly Rent:</span>
-                                    <span class="value">$500</span>
-                                </div>
+                <!-- My Profile Section -->
+                <div class="card section" id="profile" data-section="profile">
+                    <div class="card-header">
+                        <h3>My Profile</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="room-info" id="profileInfo">
+                            <div class="room-detail">
+                                <span class="label">Admission Number:</span>
+                                <span class="value" id="admissionNumber">-</span>
+                            </div>
+                            <div class="room-detail">
+                                <span class="label">Full Name:</span>
+                                <span class="value" id="fullName">-</span>
+                            </div>
+                            <div class="room-detail">
+                                <span class="label">Email:</span>
+                                <span class="value" id="email">-</span>
+                            </div>
+                            <div class="room-detail">
+                                <span class="label">Phone:</span>
+                                <span class="value" id="phone">-</span>
+                            </div>
+                            <div class="room-detail">
+                                <span class="label">Room Number:</span>
+                                <span class="value" id="roomNumberDisplay">-</span>
+                            </div>
+                            <div class="room-detail">
+                                <span class="label">Floor:</span>
+                                <span class="value" id="floorNum">-</span>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Recent Notices -->
-                    <div class="card" id="notices">
-                        <div class="card-header">
-                            <h3>Recent Notices</h3>
-                            <a href="#" class="btn btn-sm btn-secondary">View All</a>
-                        </div>
-                        <div class="card-body">
-                            <div class="notice-list">
-                                <div class="notice-item">
-                                    <div class="notice-date">Apr 01</div>
-                                    <div class="notice-content">
-                                        <h4>Water Supply Interruption</h4>
-                                        <p>Water supply will be interrupted on April 5th from 10 AM to 2 PM for maintenance.</p>
-                                    </div>
-                                </div>
-                                <div class="notice-item">
-                                    <div class="notice-date">Mar 28</div>
-                                    <div class="notice-content">
-                                        <h4>Monthly Fee Payment Reminder</h4>
-                                        <p>April monthly fee payment due date is April 10th. Please pay on time.</p>
-                                    </div>
-                                </div>
-                                <div class="notice-item">
-                                    <div class="notice-date">Mar 25</div>
-                                    <div class="notice-content">
-                                        <h4>New WiFi Password</h4>
-                                        <p>The new WiFi password for Block A is: Hostel2024@A</p>
-                                    </div>
-                                </div>
-                            </div>
+                </div>
+                
+                <!-- Recent Notices -->
+                <div class="card section" id="notices" data-section="notices">
+                    <div class="card-header">
+                        <h3>Recent Notices</h3>
+                        <a href="#" class="btn btn-sm btn-secondary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="notice-list" id="userNoticesList">
+                            <p style="text-align:center;padding:20px;color:#999;">Loading...</p>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Recent Complaints -->
-                <div class="card" id="complaints">
+                <div class="card section" id="complaints" data-section="complaints">
                     <div class="card-header">
                         <h3>My Complaints</h3>
                         <button class="btn btn-primary btn-sm" onclick="openModal('complaintModal')">
@@ -273,43 +221,13 @@
                                         <th>Status</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="userComplaintsTableBody">
                                     <tr>
-                                        <td>#C001</td>
-                                        <td>Plumbing</td>
-                                        <td>Leaking faucet in bathroom</td>
-                                        <td>Mar 30, 2024</td>
-                                        <td><span class="badge badge-warning">In Progress</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>#C002</td>
-                                        <td>Electrical</td>
-                                        <td>Fan not working properly</td>
-                                        <td>Mar 25, 2024</td>
-                                        <td><span class="badge badge-success">Resolved</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>#C003</td>
-                                        <td>Furniture</td>
-                                        <td>Broken chair in room</td>
-                                        <td>Mar 20, 2024</td>
-                                        <td><span class="badge badge-success">Resolved</span></td>
+                                        <td colspan="5" style="text-align:center">Loading...</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Payment History -->
-                <div class="card" id="payments">
-                    <div class="card-header">
-                        <h3>Payment History</h3>
-                    </div>
-                    <div class="card-body" style="text-align: center; padding: 60px 20px;">
-                        <img src="https://pngimg.com/d/under_construction_PNG44.png" alt="Under Construction" style="max-width: 100px; height: auto; margin-bottom: 20px;">
-                        <h4 style="margin-top: 20px; color: #666;">Under Construction</h4>
-                        <p style="color: #999;">This section is currently being built. Please check back later.</p>
                     </div>
                 </div>
             </div>
