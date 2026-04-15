@@ -1,5 +1,15 @@
 User-agent: *
-Disallow: /server/
-Disallow: /server/*
+Disallow: /api/
+Disallow: /backend/
 Disallow: /.env
-Allow: /
+Disallow: /config/
+Disallow: /node_modules/
+Disallow: /diagrams/
+Allow: /frontend/
+Allow: /frontend/js/
+Allow: /frontend/css/
+Allow: /frontend/assets/
+Allow: /frontend/*.html
+
+# Sitemap location (if you have one)
+# Sitemap: https://yourdomain.com/sitemap.xml

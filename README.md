@@ -1,6 +1,6 @@
 # Hostel Management System
 
-A web-based application for managing hostel operations including student admissions, room allocations, payments, notices, and complaints.
+A web-based application for managing hostel operations including student admissions, room allocations, notices, and complaints.
 
 ## Tech Stack
 
@@ -12,32 +12,93 @@ A web-based application for managing hostel operations including student admissi
 
 ```
 hostel-management-system/
-├── frontend/           # Frontend files (HTML, CSS, JS)
-│   ├── index.html             # Login page
-│   ├── dashboard_admin.html  # Admin dashboard
-│   ├── dashboard_user.html   # Student dashboard
-│   └── logo.png              # Application logo
+├── frontend/              # Frontend files (HTML, CSS, JS)
+│   ├── index.html                    # Login page
+│   ├── dashboard_admin.html         # Admin dashboard
+│   ├── dashboard_user.html          # Student dashboard
+│   ├── css/
+│   │   └── style.css                 # Application styles
+│   └── js/
+│       ├── script.js                 # Shared utilities
+│       ├── dashboard_admin.js        # Admin dashboard logic
+│       └── dashboard_user.js         # Student dashboard logic
+│   └── assets/
+│       └── icons/                    # Icon images
 │
-├── backend/           # Backend API (Node.js + Express)
-│   ├── config/         # Configuration files
-│   │   └── database.js      # MySQL database connection
-│   │
-│   ├── controllers/  # Business logic (待添加)
-│   │
-│   ├── routes/       # API route definitions
-│   │   └── index.js         # Main route handler
-│   │
-│   ├── middleware/  # Custom middleware (待添加)
-│   │
-│   ├── models/       # Data models (待添加)
-│   │
-│   ├── .env          # Environment variables
-│   ├── database.sql # MySQL database setup script
-│   ├── package.json # Node.js dependencies
-│   └── server.js     # Express server entry point
+├── backend/              # Backend API (Node.js + Express)
+│   ├── config/
+│   │   └── database.js              # MySQL database connection
+│   ├── routes/
+│   │   ├── auth.js                  # Authentication routes
+│   │   └── data.js                  # CRUD routes for entities
+│   ├── database.sql                 # MySQL schema & seed data
+│   ├── server.js                    # Express server entry point
+│   ├── package.json                 # Node dependencies
+│   └── .env                         # Environment variables
 │
-└── README.md         # This file
+└── README.md                         # This file
 ```
+
+## Database Schema
+
+### Cleaned Schema (Removed Unused Columns)
+
+After audit, the following unused columns were removed to streamline the database:
+
+**Removed columns:**
+- `users.created_at` - not used
+- `rooms.created_at` - not used
+- `rooms.block_id` - blocks concept removed
+- `complaints.resolved_by` - never used
+- `complaints.updated_at` - never queried
+- `notices.expires_at` - never used
+
+### Tables
+
+| Table | Columns | Description |
+|-------|---------|-------------|
+| `users` | id, username, password, role, first_name, last_name, email, phone | Admin & student accounts |
+| `rooms` | id, room_number, floor, capacity, current_occupancy, status | Room master data |
+| `students` | id, user_id, room_id, admission_number | Student profiles linked to users |
+| `notices` | id, title, content, posted_by, priority, created_at | Notice board posts |
+| `complaints` | id, student_id, category, description, status, resolution_notes, created_at | Student complaints |
+
+### Room Capacity Rules
+- Each room has a fixed capacity (1-4 persons)
+- `current_occupancy` tracks how many students are assigned
+- `status` is derived: 'available' if `current_occupancy < capacity`, 'full' if `current_occupancy >= capacity`
+- Room status automatically updates on student add/delete/transfer
+
+## API Endpoints
+
+### Authentication (`/api/auth`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | User login |
+| POST | `/api/auth/register` | User registration |
+| GET | `/api/auth/me` | Get current user profile |
+| POST | `/api/auth/logout` | User logout |
+
+### Data Operations (`/api/data`) - Requires Auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/data/stats` | Get dashboard statistics |
+| GET | `/api/data/students` | List all students |
+| POST | `/api/data/students` | Add new student |
+| GET | `/api/data/students/:id` | Get single student |
+| PUT | `/api/data/students/:id` | Update student |
+| DELETE | `/api/data/students/:id` | Delete student |
+| GET | `/api/data/rooms` | List all rooms |
+| POST | `/api/data/rooms` | Add new room |
+| DELETE | `/api/data/rooms/:id` | Delete room |
+| GET | `/api/data/complaints` | List complaints |
+| POST | `/api/data/complaints` | Submit complaint |
+| GET | `/api/data/complaints/:id` | Get single complaint |
+| PUT | `/api/data/complaints/:id` | Update complaint status |
+| GET | `/api/data/notices` | List notices |
+| POST | `/api/data/notices` | Publish notice |
+| DELETE | `/api/data/notices/:id` | Delete notice |
+| GET | `/api/data/my-profile` | Get logged-in student profile |
 
 ## Getting Started
 
@@ -56,65 +117,49 @@ hostel-management-system/
 
 2. **Setup MySQL Database**
    ```bash
-   mysql -u root -p < database.sql
+   mysql -u root -p < backend/database.sql
    ```
+   Or manually: Open MySQL and run the commands in `backend/database.sql`
 
 3. **Configure Environment**
-   - Edit `.env` file in `backend/` folder
-   - Update `DB_PASSWORD` with your MySQL password
+   - Create `.env` file in `backend/` folder:
+   ```
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=root
+   DB_PASSWORD=your_mysql_password
+   DB_NAME=hostel_management
+   JWT_SECRET=Team_LMX_HMS_2026
+   PORT=3000
+   ```
 
 4. **Start the Server**
    ```bash
    cd backend
    npm start
    ```
-   Server will run on http://localhost:3000
+   Server runs on http://localhost:3000
 
 5. **Open Frontend**
    - Open `frontend/index.html` in a browser
-   - Or serve it with a local server (e.g., Live Server in VS Code)
+   - Or use a local server (VS Code Live Server recommended)
 
-## Database Schema
+6. **Default Admin Login**
+   - Username: `admin`
+   - Password: `admin123`
 
-### Tables
+## Getting Started
 
-| Table | Description |
-|-------|-------------|
-| `users` | Admin and student accounts |
-| `blocks` | Hostel blocks (Block A, B, C) |
-| `rooms` | Individual rooms in each block |
-| `students` | Student profile details |
-| `room_allocations` | Room assignment history |
-| `notices` | Notice board posts |
-| `payments` | Monthly payment records |
-| `complaints` | Student complaints |
-| `amenities` | Hostel amenities |
+- **Role-based Access Control:** Separate dashboards for Admin and Students
+- **Room Management:** Add/delete rooms, track capacity and occupancy
+- **Student Management:** Create, update, delete student accounts with automatic room assignment
+- **Complaint System:** Students submit complaints, admins track and resolve them
+- **Notice Board:** Admins publish notices visible to all students
+- **Responsive Design:** Works on desktop and mobile
 
-## API Endpoints
+## Security Notes
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api | API health check |
-
-More endpoints to be added.
-
-## Frontend Pages
-
-| File | Description |
-|------|-------------|
-| `index.html` | Login page for admin and students |
-| `dashboard_admin.html` | Admin dashboard with management features |
-| `dashboard_user.html` | Student dashboard with personal info |
-
-## Contributing
-
-1. Create a new branch for your feature
-2. Make your changes
-3. Test locally
-4. Submit a pull request
-
-## Notes
-
-- Default admin credentials need to be set up manually in the database
-- Use proper password hashing in production
-- Add authentication middleware before deploying
+- Passwords are hashed using bcrypt before storing
+- JWT tokens used for authentication (24h expiry)
+- API endpoints protected with Bearer token middleware
+- SQL injection prevented using parameterized queries
