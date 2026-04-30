@@ -1107,4 +1107,258 @@ async function saveAdminPassword(currentPassword, newPassword, theme) {
     }
 })();
 
+// ============================================
+// Notification System for Admin
+// ============================================
+
+let adminNotifications = [];
+let notificationCheckInterval = null;
+
+function getNotificationStorageKey() {
+    return 'hms_admin_notifications';
+}
+
+function getPreviousComplaintsKey() {
+    return 'hms_admin_previous_complaints';
+}
+
+function getPreviousRequestsKey() {
+    return 'hms_admin_previous_requests';
+}
+
+async function initAdminNotifications() {
+    const stored = localStorage.getItem(getNotificationStorageKey());
+    if (stored) {
+        adminNotifications = JSON.parse(stored);
+    }
+    renderNotifications();
+    updateNotificationBadge();
+    
+    await checkForNewNotifications();
+    notificationCheckInterval = setInterval(checkForNewNotifications, 30000);
+}
+
+async function checkForNewNotifications() {
+    try {
+        const complaintsRes = await fetch(`${DATA_API_BASE_URL}/complaints?status=pending`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        const complaints = await complaintsRes.json();
+        
+        const prevComplaints = JSON.parse(localStorage.getItem(getPreviousComplaintsKey()) || '[]');
+        const currentComplaintIds = complaints.map(c => c.id);
+        
+        complaints.forEach(c => {
+            if (!prevComplaints.includes(c.id)) {
+                const exists = adminNotifications.some(n => n.type === 'complaint' && n.refId === c.id);
+                if (!exists) {
+                    addNotification({
+                        type: 'complaint',
+                        title: 'New Complaint Received',
+                        message: `${c.first_name} ${c.last_name} filed a new ${c.category} complaint`,
+                        refId: c.id
+                    });
+                }
+            }
+        });
+        
+        localStorage.setItem(getPreviousComplaintsKey(), JSON.stringify(currentComplaintIds));
+        
+        const requestsRes = await fetch(`${DATA_API_BASE_URL}/settings-requests?status=pending`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        const requests = await requestsRes.json();
+        
+        const prevRequests = JSON.parse(localStorage.getItem(getPreviousRequestsKey()) || '[]');
+        const currentRequestIds = requests.map(r => r.id);
+        
+        requests.forEach(r => {
+            if (!prevRequests.includes(r.id)) {
+                const exists = adminNotifications.some(n => n.type === 'request' && n.refId === r.id);
+                if (!exists) {
+                    addNotification({
+                        type: 'request',
+                        title: 'New Approval Request',
+                        message: `${r.requested_by_username} requested to change ${r.setting_type}`,
+                        refId: r.id
+                    });
+                }
+            }
+        });
+        
+        localStorage.setItem(getPreviousRequestsKey(), JSON.stringify(currentRequestIds));
+        
+    } catch (error) {
+        console.error('Error checking for notifications:', error);
+    }
+}
+
+function addNotification(notification) {
+    notification.id = Date.now();
+    notification.timestamp = new Date().toISOString();
+    notification.read = false;
+    
+    adminNotifications.unshift(notification);
+    
+    if (adminNotifications.length > 50) {
+        adminNotifications = adminNotifications.slice(0, 50);
+    }
+    
+    localStorage.setItem(getNotificationStorageKey(), JSON.stringify(adminNotifications));
+    
+    renderNotifications();
+    updateNotificationBadge();
+    
+    if (notification.type === 'complaint') {
+        showToast('New complaint received!', 'warning');
+    } else if (notification.type === 'request') {
+        showToast('New approval request!', 'info');
+    }
+}
+
+function toggleNotificationPopup() {
+    const popup = document.getElementById('notificationPopup');
+    if (popup) {
+        popup.classList.toggle('active');
+        
+        if (popup.classList.contains('active')) {
+            markAllAsRead();
+        }
+    }
+}
+
+function markAllAsRead() {
+    adminNotifications.forEach(n => n.read = true);
+    localStorage.setItem(getNotificationStorageKey(), JSON.stringify(adminNotifications));
+    updateNotificationBadge();
+}
+
+function clearAllNotifications(event) {
+    if (event) event.stopPropagation();
+    
+    adminNotifications = [];
+    localStorage.setItem(getNotificationStorageKey(), JSON.stringify(adminNotifications));
+    renderNotifications();
+    updateNotificationBadge();
+    
+    const popup = document.getElementById('notificationPopup');
+    if (popup) popup.classList.remove('active');
+}
+
+function renderNotifications() {
+    const list = document.getElementById('notificationList');
+    if (!list) return;
+    
+    if (adminNotifications.length === 0) {
+        list.innerHTML = `
+            <div class="notification-empty">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <p>No notifications yet</p>
+            </div>
+        `;
+        return;
+    }
+    
+    list.innerHTML = adminNotifications.map(n => `
+        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="handleNotificationClick('${n.type}', '${n.refId}')">
+            <div class="notification-icon ${getNotificationIconClass(n.type)}">
+                ${getNotificationIcon(n.type)}
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">${n.title}</div>
+                <div class="notification-message">${n.message}</div>
+                <div class="notification-time">${formatTimeAgo(n.timestamp)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getNotificationIconClass(type) {
+    const classes = {
+        'complaint': 'complaint',
+        'request': 'request',
+        'notice': 'notice',
+        'request-approved': 'request-approved',
+        'request-rejected': 'request-rejected',
+        'complaint-resolved': 'complaint-resolved',
+        'complaint-progress': 'complaint-progress'
+    };
+    return classes[type] || 'notice';
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'complaint': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
+        'request': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>',
+        'notice': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>',
+        'request-approved': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+        'request-rejected': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+        'complaint-resolved': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+        'complaint-progress': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>'
+    };
+    return icons[type] || icons.notice;
+}
+
+function handleNotificationClick(type, refId) {
+    const popup = document.getElementById('notificationPopup');
+    if (popup) popup.classList.remove('active');
+    
+    if (type === 'complaint') {
+        showSection('complaints');
+        viewComplaint(refId);
+    } else if (type === 'request') {
+        showSection('settings-requests');
+    }
+}
+
+function updateNotificationBadge() {
+    const badge = document.getElementById('notificationBadge');
+    const bell = document.getElementById('notificationBell');
+    if (!badge || !bell) return;
+    
+    const unreadCount = adminNotifications.filter(n => !n.read).length;
+    badge.textContent = unreadCount;
+    
+    if (unreadCount > 0) {
+        bell.classList.add('has-notifications');
+    } else {
+        bell.classList.remove('has-notifications');
+    }
+}
+
+function formatTimeAgo(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diff = now - time;
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    
+    return time.toLocaleDateString();
+}
+
+document.addEventListener('click', function(e) {
+    const popup = document.getElementById('notificationPopup');
+    const bell = document.getElementById('notificationBell');
+    
+    if (popup && popup.classList.contains('active')) {
+        if (!popup.contains(e.target) && (!bell || !bell.contains(e.target))) {
+            popup.classList.remove('active');
+        }
+    }
+});
+
+if (document.getElementById('notificationBell')) {
+    initAdminNotifications();
+}
+
 

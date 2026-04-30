@@ -229,14 +229,24 @@ router.delete('/rooms/:id', async (req, res) => {
 // ==================== COMPLAINTS ====================
 router.get('/complaints', async (req, res) => {
     try {
-        const [complaints] = await db.execute(`
+        const statusFilter = req.query.status;
+        let query = `
             SELECT c.id, c.category, c.description, c.status, c.resolution_notes, c.created_at,
                    u.first_name, u.last_name, u.email
             FROM complaints c
             JOIN students s ON c.student_id = s.id
             JOIN users u ON s.user_id = u.id
-            ORDER BY c.id DESC
-        `);
+        `;
+        let params = [];
+        
+        if (statusFilter) {
+            query += ' WHERE c.status = ?';
+            params.push(statusFilter);
+        }
+        
+        query += ' ORDER BY c.id DESC';
+        
+        const [complaints] = await db.execute(query, params);
         res.json(complaints);
     } catch (error) {
         console.error('Get complaints error:', error);
@@ -390,20 +400,51 @@ router.get('/settings-requests', async (req, res) => {
             LEFT JOIN users reviewer ON sr.reviewed_by = reviewer.id
         `;
         let params = [];
+        let whereClause = '';
         
         // If user is student, only show their own requests
         if (req.user.role === 'student') {
-            query += ' WHERE sr.user_id = ?';
+            whereClause = ' WHERE sr.user_id = ?';
             params.push(req.user.id);
         }
         
-        query += ' ORDER BY sr.created_at DESC';
+        // Add status filter if provided
+        const statusFilter = req.query.status;
+        if (statusFilter) {
+            whereClause += whereClause ? ' AND sr.status = ?' : ' WHERE sr.status = ?';
+            params.push(statusFilter);
+        }
+        
+        query += whereClause + ' ORDER BY sr.created_at DESC';
         
         const [requests] = await db.execute(query, params);
         res.json(requests);
     } catch (error) {
         console.error('Get settings requests error:', error);
         res.status(500).json({ error: 'Failed to fetch requests' });
+    }
+});
+
+/**
+ * GET user's own settings change requests
+ */
+router.get('/my-settings-requests', async (req, res) => {
+    try {
+        const [requests] = await db.execute(
+            `SELECT sr.*, 
+                    u.username as requested_by_username,
+                    u.first_name as requested_by_firstname,
+                    u.last_name as requested_by_lastname
+             FROM settings_change_requests sr
+             JOIN users u ON sr.user_id = u.id
+             WHERE sr.user_id = ?
+             ORDER BY sr.created_at DESC`,
+            [req.user.id]
+        );
+        res.json(requests);
+    } catch (error) {
+        console.error('Get my settings requests error:', error);
+        res.status(500).json({ error: 'Failed to fetch your requests' });
     }
 });
 
