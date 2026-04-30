@@ -8,6 +8,9 @@ let roomsData = []; // Store rooms data for dropdown
 document.addEventListener('DOMContentLoaded', function() {
     initDashboard();
     
+    // Initialize theme
+    initTheme();
+    
     // Setup floor change listener for room dropdown
     const floorSelect = document.getElementById('studentFloor');
     const roomSelect = document.getElementById('studentRoom');
@@ -16,6 +19,15 @@ document.addEventListener('DOMContentLoaded', function() {
         floorSelect.addEventListener('change', function() {
             const selectedFloor = this.value;
             filterRoomsByFloor(selectedFloor, roomSelect);
+        });
+    }
+    
+    // Theme selector change handler
+    const themeSelect = document.getElementById('settingsTheme');
+    if (themeSelect) {
+        themeSelect.addEventListener('change', function() {
+            saveTheme(this.value);
+            showToast('Theme updated!', 'success');
         });
     }
     
@@ -761,6 +773,7 @@ function showSection(section) {
     const studentsSection = document.getElementById('students');
     const roomsSection = document.getElementById('rooms');
     const complaintsSection = document.getElementById('complaints');
+    const settingsRequestsSection = document.getElementById('settings-requests');
     const settingsSection = document.getElementById('settings');
     
     if (section === 'dashboard') {
@@ -769,6 +782,7 @@ function showSection(section) {
         if (studentsSection) studentsSection.style.display = 'none';
         if (roomsSection) roomsSection.style.display = 'none';
         if (complaintsSection) complaintsSection.style.display = 'none';
+        if (settingsRequestsSection) settingsRequestsSection.style.display = 'none';
         if (settingsSection) settingsSection.style.display = 'none';
     } else {
         if (statsGrid) statsGrid.style.display = 'none';
@@ -776,6 +790,7 @@ function showSection(section) {
         if (studentsSection) studentsSection.style.display = 'none';
         if (roomsSection) roomsSection.style.display = 'none';
         if (complaintsSection) complaintsSection.style.display = 'none';
+        if (settingsRequestsSection) settingsRequestsSection.style.display = 'none';
         if (settingsSection) settingsSection.style.display = 'none';
         
         if (section === 'students' && studentsSection) {
@@ -786,8 +801,310 @@ function showSection(section) {
             complaintsSection.style.display = 'block';
         } else if (section === 'notices' && noticesSection) {
             noticesSection.style.display = 'block';
+        } else if (section === 'settings-requests' && settingsRequestsSection) {
+            settingsRequestsSection.style.display = 'block';
+            // Set filter to pending by default and load
+            filterRequests('pending');
         } else if (section === 'settings' && settingsSection) {
             settingsSection.style.display = 'block';
+            loadAdminSettings();
         }
     }
 }
+
+// ============================================
+// Settings Requests Management
+// ============================================
+
+/**
+ * Load all settings change requests
+ * @param {string} filter - 'pending' or 'all'
+ */
+async function loadSettingsRequests(filter = 'pending') {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/settings-requests`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch requests');
+        }
+        
+        const requests = await response.json();
+        
+        // Update pending count badge
+        const pendingCount = requests.filter(r => r.status === 'pending').length;
+        const pendingBadge = document.getElementById('pendingCount');
+        if (pendingBadge) {
+            pendingBadge.textContent = pendingCount;
+            pendingBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+        }
+        
+        renderSettingsRequests(requests, filter);
+    } catch (error) {
+        console.error('Error loading settings requests:', error);
+        document.getElementById('settingsRequestsTableBody').innerHTML = 
+            '<tr><td colspan="9" style="text-align:center;color:var(--danger-color)">Failed to load requests</td></tr>';
+    }
+}
+
+/**
+ * Render settings requests table
+ * @param {Array} requests - All requests from server
+ * @param {string} filter - 'pending' or 'all'
+ */
+function renderSettingsRequests(requests, filter) {
+    const tbody = document.getElementById('settingsRequestsTableBody');
+    
+    // Filter based on status
+    let filteredRequests = requests;
+    if (filter === 'pending') {
+        filteredRequests = requests.filter(r => r.status === 'pending');
+    }
+    
+    if (filteredRequests.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray-500);padding:20px;">No requests found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filteredRequests.map(req => `
+        <tr data-request-id="${req.id}">
+            <td>#${req.id}</td>
+            <td>
+                <div class="user-info-cell">
+                    <div class="user-avatar-small" style="width:28px;height:28px;font-size:0.7rem;background:linear-gradient(135deg,var(--primary-color),var(--secondary-color));display:flex;align-items:center;justify-content:center;border-radius:50%;color:white;font-weight:600;">
+                        ${getInitials(req.requested_by_firstname + ' ' + req.requested_by_lastname)}
+                    </div>
+                    <span>${req.requested_by_username}</span>
+                </div>
+            </td>
+            <td><span class="setting-type">${req.setting_type}</span></td>
+            <td><code class="old-value">${req.old_value || '-'}</code></td>
+            <td><code class="new-value">${req.new_value}</code></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${req.reason || ''}">${req.reason || '-'}</td>
+            <td><span class="request-status ${req.status}">${req.status}</span></td>
+            <td>${new Date(req.created_at).toLocaleDateString()}</td>
+            <td>
+                ${req.status === 'pending' ? `
+                    <div class="request-actions">
+                        <button class="request-btn approve" onclick="approveRequest(${req.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Approve
+                        </button>
+                        <button class="request-btn reject" onclick="rejectRequest(${req.id})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            Reject
+                        </button>
+                    </div>
+                ` : `
+                    <div class="request-processed">
+                        ${req.reviewed_by_firstname ? `By: ${req.reviewed_by_firstname}` : ''}
+                        ${req.review_notes ? `<br><small title="${req.review_notes}">${req.review_notes.substring(0,30)}...</small>` : ''}
+                    </div>
+                `}
+            </td>
+        </tr>
+    `).join('');
+}
+
+/**
+ * Approve a settings change request
+ */
+async function approveRequest(requestId) {
+    if (!confirm('Approve this change? The user\'s settings will be updated immediately.')) {
+        return;
+    }
+    
+    const notes = prompt('Optional: Add review notes (e.g., reason for approval):', '');
+    if (notes === null) return; // User cancelled
+    
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/settings-requests/${requestId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                status: 'approved',
+                reviewNotes: notes
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to approve request');
+        }
+        
+        showToast('Request approved successfully!', 'success');
+        loadSettingsRequests(); // Refresh table
+    } catch (error) {
+        console.error('Error approving request:', error);
+        showToast(error.message, 'error');
+    }
+}
+
+/**
+ * Reject a settings change request
+ */
+async function rejectRequest(requestId) {
+    if (!confirm('Reject this change request?')) {
+        return;
+    }
+    
+    const notes = prompt('Reason for rejection (required):', '');
+    if (!notes || notes.trim() === '') {
+        showToast('Please provide a reason for rejection', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/settings-requests/${requestId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                status: 'rejected',
+                reviewNotes: notes
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to reject request');
+        }
+        
+        showToast('Request rejected', 'warning');
+        loadSettingsRequests(); // Refresh table
+    } catch (error) {
+        console.error('Error rejecting request:', error);
+        showToast(error.message, 'error');
+    }
+}
+
+/**
+ * Filter requests by status
+ * @param {string} filter - 'pending' or 'all'
+ */
+function filterRequests(filter) {
+    // Update button active states
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.dataset.filter === filter) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    loadSettingsRequests(filter);
+}
+
+// ============================================
+// Admin Settings (Direct Update - No Approval Needed)
+// ============================================
+
+/**
+ * Load current admin settings
+ */
+function loadAdminSettings() {
+    // Theme preference from localStorage
+    const savedTheme = localStorage.getItem('hms_theme') || 'light';
+    const themeSelect = document.getElementById('settingsTheme');
+    if (themeSelect) {
+        themeSelect.value = savedTheme;
+    }
+}
+
+/**
+ * Admin can directly update their own settings
+ */
+function saveAdminSettings() {
+    const currentPassword = document.getElementById('settingsCurrentPassword').value;
+    const newPassword = document.getElementById('settingsNewPassword').value;
+    const confirmPassword = document.getElementById('settingsConfirmPassword').value;
+    const theme = document.getElementById('settingsTheme').value;
+
+    // Validate passwords match
+    if (newPassword && newPassword !== confirmPassword) {
+        showToast('New passwords do not match', 'error');
+        return;
+    }
+
+    const user = getCurrentUser();
+    if (!user) {
+        showToast('User not authenticated', 'error');
+        return;
+    }
+
+    // If password change is requested, send to backend
+    if (newPassword) {
+        saveAdminPassword(currentPassword, newPassword, theme);
+    } else {
+        // Only theme change
+        localStorage.setItem('hms_theme', theme);
+        showToast('Settings updated successfully!', 'success');
+    }
+}
+
+/**
+ * Call backend to change admin password
+ */
+async function saveAdminPassword(currentPassword, newPassword, theme) {
+    showToast('Updating password...', 'info');
+    
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/change-password`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                currentPassword,
+                newPassword
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to change password');
+        }
+        
+        // Save theme preference
+        localStorage.setItem('hms_theme', theme);
+        
+        // Clear password fields
+        document.getElementById('settingsCurrentPassword').value = '';
+        document.getElementById('settingsNewPassword').value = '';
+        document.getElementById('settingsConfirmPassword').value = '';
+        
+        showToast('Password and settings updated successfully!', 'success');
+    } catch (error) {
+        console.error('Error changing password:', error);
+        showToast(error.message, 'error');
+    }
+}
+
+// Initialize admin settings form on DOM load - hook into existing listener
+(function() {
+    // Admin settings form submission
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveAdminSettings();
+        });
+    }
+})();
+
+

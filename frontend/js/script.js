@@ -311,3 +311,69 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// ============================================
+// Theme Management System
+// ============================================
+
+/**
+ * Initialize theme on page load - called from dashboard JS files
+ */
+function initTheme() {
+    const savedTheme = localStorage.getItem('hms_theme') || 'light';
+    applyTheme(savedTheme);
+    
+    // Listen for system theme changes if in auto mode
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            const currentTheme = localStorage.getItem('hms_theme');
+            if (currentTheme === 'auto') {
+                applyTheme('auto');
+            }
+        });
+    }
+}
+
+/**
+ * Apply theme to document
+ * @param {string} theme - 'light', 'dark', or 'auto'
+ */
+function applyTheme(theme) {
+    const root = document.documentElement;
+    
+    if (theme === 'auto') {
+        // Check system preference
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        theme = prefersDark ? 'dark' : 'light';
+    }
+    
+    if (theme === 'dark') {
+        root.setAttribute('data-theme', 'dark');
+    } else {
+        root.removeAttribute('data-theme');
+    }
+}
+
+/**
+ * Get current effective theme (resolves 'auto' to actual theme)
+ * @returns {string} 'light' or 'dark'
+ */
+function getCurrentTheme() {
+    const savedTheme = localStorage.getItem('hms_theme') || 'light';
+    
+    if (savedTheme === 'auto') {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return prefersDark ? 'dark' : 'light';
+    }
+    
+    return savedTheme;
+}
+
+/**
+ * Save theme preference to localStorage
+ * @param {string} theme - 'light', 'dark', or 'auto'
+ */
+function saveTheme(theme) {
+    localStorage.setItem('hms_theme', theme);
+    applyTheme(theme);
+}

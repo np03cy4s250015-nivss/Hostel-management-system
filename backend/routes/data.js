@@ -185,6 +185,7 @@ router.put('/students/:id', async (req, res) => {
     }
 });
 
+// ==================== ROOMS ====================
 router.get('/rooms', async (req, res) => {
     try {
         const [rooms] = await db.execute(`
@@ -225,6 +226,7 @@ router.delete('/rooms/:id', async (req, res) => {
     }
 });
 
+// ==================== COMPLAINTS ====================
 router.get('/complaints', async (req, res) => {
     try {
         const [complaints] = await db.execute(`
@@ -297,6 +299,7 @@ router.put('/complaints/:id', async (req, res) => {
     }
 });
 
+// ==================== NOTICES ====================
 router.get('/notices', async (req, res) => {
     try {
         const [notices] = await db.execute(`
@@ -340,6 +343,7 @@ router.delete('/notices/:id', async (req, res) => {
     }
 });
 
+// ==================== MY PROFILE ====================
 router.get('/my-profile', async (req, res) => {
     try {
         const [students] = await db.execute(`
@@ -359,6 +363,179 @@ router.get('/my-profile', async (req, res) => {
     } catch (error) {
         console.error('Get profile error:', error);
         res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+});
+
+// ============================================
+// Settings Change Requests Routes
+// ============================================
+
+/**
+ * GET all settings change requests
+ * - Admin: sees all requests
+ * - Student: sees only their own requests
+ */
+router.get('/settings-requests', async (req, res) => {
+    try {
+        let query = `
+            SELECT sr.*,
+                   u.username as requested_by_username,
+                   u.first_name as requested_by_firstname,
+                   u.last_name as requested_by_lastname,
+                   reviewer.username as reviewed_by_username,
+                   reviewer.first_name as reviewed_by_firstname,
+                   reviewer.last_name as reviewed_by_lastname
+            FROM settings_change_requests sr
+            JOIN users u ON sr.user_id = u.id
+            LEFT JOIN users reviewer ON sr.reviewed_by = reviewer.id
+        `;
+        let params = [];
+        
+        // If user is student, only show their own requests
+        if (req.user.role === 'student') {
+            query += ' WHERE sr.user_id = ?';
+            params.push(req.user.id);
+        }
+        
+        query += ' ORDER BY sr.created_at DESC';
+        
+        const [requests] = await db.execute(query, params);
+        res.json(requests);
+    } catch (error) {
+        console.error('Get settings requests error:', error);
+        res.status(500).json({ error: 'Failed to fetch requests' });
+    }
+});
+
+/**
+ * POST new settings change request
+ * Any authenticated user can submit a request
+ */
+router.post('/settings-requests', async (req, res) => {
+    try {
+        const { settingType, oldValue, newValue, reason } = req.body;
+        
+        if (!settingType || !newValue) {
+            return res.status(400).json({ error: 'Setting type and new value are required' });
+        }
+        
+        // Username changes are not allowed via this endpoint (handled directly by admin or blocked)
+        if (settingType === 'username') {
+            return res.status(403).json({ error: 'Username changes are not permitted' });
+        }
+        
+        // Validate setting type
+        const validTypes = ['password', 'theme'];
+        if (!validTypes.includes(settingType)) {
+            return res.status(400).json({ error: 'Invalid setting type' });
+        }
+        
+        // Check if user already has a pending request for this setting
+        const [existing] = await db.execute(
+            'SELECT id FROM settings_change_requests WHERE user_id = ? AND setting_type = ? AND status = ?',
+            [req.user.id, settingType, 'pending']
+        );
+        
+        if (existing.length > 0) {
+            return res.status(400).json({ 
+                error: 'You already have a pending request for this setting. Please wait for admin review.' 
+            });
+        }
+        
+        await db.execute(
+            `INSERT INTO settings_change_requests 
+                (user_id, setting_type, old_value, new_value, reason, status, created_at) 
+             VALUES (?, ?, ?, ?, ?, 'pending', NOW())`,
+            [req.user.id, settingType, oldValue, newValue, reason || null]
+        );
+        
+        res.status(201).json({ message: 'Settings change request submitted successfully' });
+    } catch (error) {
+        console.error('Create settings request error:', error);
+        res.status(500).json({ error: 'Failed to submit request' });
+    }
+});
+
+/**
+ * PUT update settings request status (approve/reject)
+ * Admin only
+ */
+router.put('/settings-requests/:id', async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        const { status, reviewNotes } = req.body;
+        const requestId = req.params.id;
+        
+        // Only admin can approve/reject
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+        
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+        
+        // Get the request with user info
+        const [requests] = await connection.execute(
+            `SELECT sr.*, u.username 
+             FROM settings_change_requests sr
+             JOIN users u ON sr.user_id = u.id
+             WHERE sr.id = ?`,
+            [requestId]
+        );
+        
+        if (requests.length === 0) {
+            return res.status(404).json({ error: 'Request not found' });
+        }
+        
+        const request = requests[0];
+        
+        if (request.status !== 'pending') {
+            return res.status(400).json({ error: 'Request has already been processed' });
+        }
+        
+        await connection.beginTransaction();
+        
+        // Update request status
+        await connection.execute(
+            `UPDATE settings_change_requests 
+             SET status = ?, reviewed_by = ?, review_notes = ?, updated_at = NOW() 
+             WHERE id = ?`,
+            [status, req.user.id, reviewNotes || null, requestId]
+        );
+        
+        // If approved, apply the change
+        if (status === 'approved') {
+            const { setting_type, new_value } = request;
+            
+            if (setting_type === 'password') {
+                const bcrypt = require('bcrypt');
+                const hashedPassword = await bcrypt.hash(new_value, 10);
+                await connection.execute(
+                    'UPDATE users SET password = ? WHERE id = ?',
+                    [hashedPassword, request.user_id]
+                );
+            } else if (setting_type === 'theme') {
+                // Upsert theme preference into user_settings
+                await connection.execute(
+                    `INSERT INTO user_settings (user_id, theme) VALUES (?, ?)
+                     ON DUPLICATE KEY UPDATE theme = ?`,
+                    [request.user_id, new_value, new_value]
+                );
+            }
+        }
+        
+        await connection.commit();
+        res.json({ 
+            message: `Request ${status} successfully`,
+            approvalStatus: status
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Update settings request error:', error);
+        res.status(500).json({ error: 'Failed to process request' });
+    } finally {
+        connection.release();
     }
 });
 

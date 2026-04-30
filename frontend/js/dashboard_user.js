@@ -7,6 +7,19 @@ const DATA_API_BASE_URL = 'http://127.0.0.1:3000/api/data';
 
 document.addEventListener('DOMContentLoaded', function() {
     initDashboard();
+    
+    // Initialize theme
+    initTheme();
+    
+    // Theme selector change handler - theme changes are immediate (stored in localStorage)
+    const themeSelect = document.getElementById('settingsTheme');
+    if (themeSelect) {
+        themeSelect.addEventListener('change', function() {
+            saveTheme(this.value);
+            showToast('Theme updated!', 'success');
+        });
+    }
+    
     loadUserData();
     const hash = window.location.hash.slice(1) || 'dashboard';
     showSection(hash);
@@ -35,8 +48,8 @@ function showSection(section) {
         const secSection = sec.getAttribute('data-section');
         
         if (section === 'dashboard') {
-            // On dashboard, show everything except profile
-            if (secSection === 'profile') {
+            // On dashboard, show complaints and notices, hide profile and settings
+            if (secSection === 'profile' || secSection === 'settings') {
                 sec.style.display = 'none';
             } else {
                 sec.style.display = 'block';
@@ -45,6 +58,10 @@ function showSection(section) {
             // On specific section, show only that, hide others
             if (secSection === section) {
                 sec.style.display = 'block';
+                // Load settings when settings section is shown
+                if (section === 'settings') {
+                    loadUserSettings();
+                }
             } else {
                 sec.style.display = 'none';
             }
@@ -243,3 +260,95 @@ function makePayment() {
 function viewNotice(id) {
     console.log('Viewing notice:', id);
 }
+
+// ============================================
+// Settings Form Handler
+// ============================================
+
+/**
+ * Load current user settings
+ */
+function loadUserSettings() {
+    // Theme preference from localStorage
+    const savedTheme = localStorage.getItem('hms_theme') || 'light';
+    const themeSelect = document.getElementById('settingsTheme');
+    if (themeSelect) {
+        themeSelect.value = savedTheme;
+    }
+}
+
+/**
+ * Handle settings form submission - Submit change request for admin approval
+ * Note: Username changes are not allowed (removed from form)
+ * Theme changes are applied immediately via dropdown, not through this form submission.
+ */
+function saveSettings() {
+    const currentPassword = document.getElementById('settingsCurrentPassword').value;
+    const newPassword = document.getElementById('settingsNewPassword').value;
+    const confirmPassword = document.getElementById('settingsConfirmPassword').value;
+    const theme = document.getElementById('settingsTheme').value; // Already saved immediately
+
+    // Validate passwords match if changing password
+    if (newPassword && newPassword !== confirmPassword) {
+        showToast('New passwords do not match', 'error');
+        return;
+    }
+
+    const user = getCurrentUser();
+    if (!user) {
+        showToast('User not authenticated', 'error');
+        return;
+    }
+
+    // Only password changes require admin approval
+    // Theme is handled immediately via dropdown change listener
+    if (!newPassword) {
+        showToast('No password changes to submit', 'info');
+        return;
+    }
+    
+    // Submit password change request
+    const submitRequests = async () => {
+        try {
+            showToast('Submitting password change request for approval...', 'info');
+            
+            await fetch(`${DATA_API_BASE_URL}/settings-requests`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: JSON.stringify({
+                    settingType: 'password',
+                    oldValue: '********',
+                    newValue: newPassword,
+                    reason: 'Change password to new secure password'
+                })
+            });
+            
+            // Clear password fields
+            document.getElementById('settingsCurrentPassword').value = '';
+            document.getElementById('settingsNewPassword').value = '';
+            document.getElementById('settingsConfirmPassword').value = '';
+            
+            showToast('Password change request submitted! Awaiting admin approval.', 'success');
+        } catch (error) {
+            console.error('Error submitting request:', error);
+            showToast('Failed to submit password change request', 'error');
+        }
+    };
+    
+    submitRequests();
+}
+
+// Initialize settings form on DOM load
+document.addEventListener('DOMContentLoaded', function() {
+    // Settings form submission
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveSettings();
+        });
+    }
+});

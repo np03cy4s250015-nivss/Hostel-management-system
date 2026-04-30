@@ -60,6 +60,34 @@ CREATE TABLE IF NOT EXISTS complaints (
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 );
 
+-- Settings Change Requests table (for username/password/theme updates with admin approval)
+CREATE TABLE IF NOT EXISTS settings_change_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    setting_type ENUM('username', 'password', 'theme') NOT NULL,
+    old_value TEXT,
+    new_value TEXT NOT NULL,
+    reason TEXT,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    reviewed_by INT DEFAULT NULL,
+    review_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_status (status),
+    INDEX idx_user_id (user_id)
+);
+
+-- User Settings table (for storing user preferences like theme)
+CREATE TABLE IF NOT EXISTS user_settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE,
+    theme VARCHAR(20) DEFAULT 'light',
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
 -- Insert rooms: 3 floors × 10 rooms = 30 total rooms
 -- Floor 1: 101-110, Floor 2: 201-210, Floor 3: 301-310
 INSERT INTO rooms (room_number, floor, capacity, status) VALUES

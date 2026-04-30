@@ -1,0 +1,507 @@
+/* ============================================
+   Dark Theme for Hostel Management System
+   Professional Slate-Based Palette
+   ============================================ */
+
+/* Dark Theme CSS Variables Override */
+:root[data-theme="dark"] {
+    /* Primary colors - adjusted for dark mode contrast */
+    --primary-color: #60a5fa;
+    --primary-dark: #3b82f6;
+    --primary-light: #93c5fd;
+    --secondary-color: #a78bfa;
+    
+    /* Semantic colors - vibrant but not harsh */
+    --success-color: #34d399;
+    --warning-color: #fbbf24;
+    --danger-color: #f87171;
+    --info-color: #22d3d8;
+    
+    /* Dark slate color palette - professional and easy on eyes */
+    --dark-color: #0f172a;
+    --dark-surface: #1e293b;
+    --dark-card: #334155;
+    --dark-border: #475569;
+    --light-color: #f1f5f9;
+    
+    /* Gray scale - carefully tuned for dark mode */
+    --gray-100: #0f172a;      /* Main background */
+    --gray-200: #1e293b;      /* Card background */
+    --gray-300: #334155;      /* Borders, dividers */
+    --gray-400: #475569;      /* Hover states */
+    --gray-500: #64748b;      /* Secondary text */
+    --gray-600: #94a3b8;      /* Placeholder text */
+    --gray-700: #e2e8f0;      /* Primary text */
+    --gray-800: #f8fafc;      /* Headings/labels */
+    
+    /* Shadows - dark mode shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+}
+
+/* Dark Theme Base Styles */
+[data-theme="dark"] {
+    background-color: var(--gray-100);
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] body {
+    background-color: var(--gray-100);
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .main-content {
+    background-color: var(--gray-100);
+}
+
+[data-theme="dark"] .top-header {
+    background: var(--gray-200);
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .page-title {
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .header-icon {
+    background: var(--gray-300);
+    color: var(--gray-500);
+}
+
+[data-theme="dark"] .header-icon:hover {
+    background: var(--gray-400);
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .logout-btn {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+[data-theme="dark"] .logout-btn:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+/* Card Styles */
+[data-theme="dark"] .card {
+    background: var(--gray-200);
+    border-color: var(--gray-300);
+    transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+    border-color: var(--gray-400);
+}
+
+[data-theme="dark"] .card-header {
+    background: linear-gradient(to right, rgba(96, 165, 250, 0.05), transparent);
+    border-bottom-color: var(--gray-300);
+}
+
+[data-theme="dark"] .card-header h3 {
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .card-body {
+    color: var(--gray-600);
+}
+
+/* Stat Cards */
+[data-theme="dark"] .stat-card {
+    background: var(--gray-200);
+    border-color: var(--gray-300);
+}
+
+[data-theme="dark"] .stat-card:hover {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .stat-details h3 {
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .stat-details p {
+    color: var(--gray-500);
+}
+
+/* Form Elements */
+[data-theme="dark"] .form-group-dash input,
+[data-theme="dark"] .form-group-dash select,
+[data-theme="dark"] .form-group-dash textarea {
+    background-color: var(--gray-100);
+    border-color: var(--gray-300);
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .form-group-dash input:focus,
+[data-theme="dark"] .form-group-dash select:focus,
+[data-theme="dark"] .form-group-dash textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    background-color: var(--gray-200);
+}
+
+[data-theme="dark"] .form-group-dash label {
+    color: var(--gray-700);
+    font-weight: 600;
+}
+
+[data-theme="dark"] input::placeholder {
+    color: var(--gray-500);
+}
+
+[data-theme="dark"] select {
+    background-image: none;
+}
+
+/* Table */
+[data-theme="dark"] table th {
+    background: var(--gray-300);
+    color: var(--gray-700);
+    font-weight: 600;
+}
+
+[data-theme="dark"] table td {
+    color: var(--gray-600);
+    border-bottom-color: var(--gray-300);
+}
+
+[data-theme="dark"] table tbody tr:hover {
+    background: rgba(96, 165, 250, 0.05);
+}
+
+/* Buttons */
+[data-theme="dark"] .btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    border: none;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
+}
+
+[data-theme="dark"] .btn-secondary {
+    background: var(--gray-300);
+    color: var(--gray-700);
+    border: none;
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+    background: var(--gray-400);
+    color: var(--gray-800);
+}
+
+[data-theme="dark"] .btn-success {
+    background: linear-gradient(135deg, var(--success-color), #059669);
+    color: white;
+    border: none;
+}
+
+[data-theme="dark"] .btn-danger {
+    background: linear-gradient(135deg, #f87171, #dc2626);
+    color: white;
+    border: none;
+}
+
+[data-theme="dark"] .btn-sm {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+}
+
+/* Badges */
+[data-theme="dark"] .badge-success {
+    background: rgba(52, 211, 153, 0.15);
+    color: var(--success-color);
+}
+
+[data-theme="dark"] .badge-warning {
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--warning-color);
+}
+
+[data-theme="dark"] .badge-danger {
+    background: rgba(248, 113, 113, 0.15);
+    color: var(--danger-color);
+}
+
+[data-theme="dark"] .badge-info {
+    background: rgba(34, 211, 216, 0.15);
+    color: var(--info-color);
+}
+
+[data-theme="dark"] .badge-primary {
+    background: rgba(96, 165, 250, 0.15);
+    color: var(--primary-color);
+}
+
+/* Action Buttons */
+[data-theme="dark"] .action-btn {
+    border: none;
+}
+
+[data-theme="dark"] .action-btn.edit {
+    background: rgba(96, 165, 250, 0.15);
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .action-btn.edit:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+[data-theme="dark"] .action-btn.delete {
+    background: rgba(248, 113, 113, 0.15);
+    color: var(--danger-color);
+}
+
+[data-theme="dark"] .action-btn.delete:hover {
+    background: var(--danger-color);
+    color: white;
+}
+
+[data-theme="dark"] .action-btn.view {
+    background: rgba(167, 139, 250, 0.15);
+    color: var(--secondary-color);
+}
+
+[data-theme="dark"] .action-btn.view:hover {
+    background: var(--secondary-color);
+    color: white;
+}
+
+/* Modal */
+[data-theme="dark"] .modal-content {
+    background: var(--gray-200);
+    border: 1px solid var(--gray-300);
+}
+
+[data-theme="dark"] .modal-header {
+    background: var(--gray-300);
+    border-bottom: 1px solid var(--gray-400);
+}
+
+[data-theme="dark"] .modal-header h3 {
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .modal-close {
+    color: var(--gray-500);
+    background: none;
+    border: none;
+}
+
+[data-theme="dark"] .modal-close:hover {
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .modal-body {
+    color: var(--gray-600);
+}
+
+[data-theme="dark"] .modal-footer {
+    background: var(--gray-300);
+    border-top: 1px solid var(--gray-400);
+}
+
+/* Toast Notifications */
+[data-theme="dark"] .toast {
+    background: var(--gray-200);
+    color: var(--gray-700);
+    box-shadow: var(--shadow-lg);
+    border-left: 4px solid var(--primary-color);
+}
+
+/* Sidebar */
+[data-theme="dark"] .sidebar {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+}
+
+[data-theme="dark"] .sidebar-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .nav-section-title {
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+[data-theme="dark"] .nav-item {
+    color: var(--gray-600);
+    transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .nav-item:hover {
+    background-color: rgba(96, 165, 250, 0.15);
+    color: var(--gray-700);
+    border-left-color: var(--primary-color);
+}
+
+[data-theme="dark"] .nav-item.active {
+    background-color: rgba(96, 165, 250, 0.2);
+    color: var(--gray-700);
+    border-left-color: var(--primary-color);
+}
+
+[data-theme="dark"] .sidebar-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .user-details .name {
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .user-details .role {
+    color: var(--gray-500);
+}
+
+/* User Avatar */
+[data-theme="dark"] .user-avatar {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+}
+
+/* Stat Icons */
+[data-theme="dark"] .stat-icon {
+    color: white;
+}
+
+[data-theme="dark"] .stat-icon.pink {
+    background: rgba(96, 165, 250, 0.2);
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .stat-icon.purple {
+    background: rgba(167, 139, 250, 0.2);
+    color: var(--secondary-color);
+}
+
+[data-theme="dark"] .stat-icon.blue {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+[data-theme="dark"] .stat-icon.green {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-color);
+}
+
+[data-theme="dark"] .stat-icon.orange {
+    background: rgba(251, 191, 36, 0.2);
+    color: var(--warning-color);
+}
+
+[data-theme="dark"] .stat-icon.red {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+/* Toggle Switch */
+[data-theme="dark"] .toggle-slider {
+    background-color: var(--gray-400);
+}
+
+[data-theme="dark"] .toggle-slider:before {
+    background-color: var(--gray-200);
+}
+
+[data-theme="dark"] input:checked + .toggle-slider {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+}
+
+/* Settings Form */
+[data-theme="dark"] .form-section {
+    border-bottom-color: var(--gray-300);
+}
+
+[data-theme="dark"] .section-title {
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .section-title svg {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .form-actions {
+    padding-top: 20px;
+    border-top: 1px solid var(--gray-300);
+}
+
+/* Notice Items */
+[data-theme="dark"] .notice-item {
+    border-bottom-color: var(--gray-300);
+}
+
+[data-theme="dark"] .notice-date {
+    color: var(--gray-500);
+}
+
+[data-theme="dark"] .notice-content h4 {
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .notice-content p {
+    color: var(--gray-600);
+}
+
+/* Scrollbar - Dark theme */
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #2563eb, #7c3aed);
+}
+
+/* Detail Grid (View Modals) */
+[data-theme="dark"] .detail-item label {
+    color: var(--gray-500);
+}
+
+[data-theme="dark"] .detail-item span {
+    color: var(--gray-700);
+}
+
+/* Links */
+[data-theme="dark"] a {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] a:hover {
+    color: var(--primary-light);
+}
+
+/* Notification Badge */
+[data-theme="dark"] .notification-badge {
+    background: var(--danger-color);
+}
+
+/* Input file (if any) */
+[data-theme="dark"] input[type="file"] {
+    color: var(--gray-600);
+}
+
+/* Checkbox & Radio */
+[data-theme="dark"] input[type="checkbox"],
+[data-theme="dark"] input[type="radio"] {
+    accent-color: var(--primary-color);
+}
+
+/* Range slider */
+[data-theme="dark"] input[type="range"] {
+    accent-color: var(--primary-color);
+}
