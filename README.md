@@ -122,16 +122,17 @@ After audit, the following unused columns were removed to streamline the databas
    Or manually: Open MySQL and run the commands in `backend/database.sql`
 
 3. **Configure Environment**
-   - Create `.env` file in `backend/` folder:
+   - Create `.env` file in `backend/` folder (do not commit this file):
    ```
    DB_HOST=localhost
    DB_PORT=3306
    DB_USER=root
    DB_PASSWORD=your_mysql_password
    DB_NAME=hostel_management
-   JWT_SECRET=Team_LMX_HMS_2026
+   JWT_SECRET=your-secure-random-secret-here
    PORT=3000
    ```
+   - **Important:** Use a strong, unique value for `JWT_SECRET` (not the example value)
 
 4. **Start the Server**
    ```bash
@@ -159,6 +160,7 @@ After audit, the following unused columns were removed to streamline the databas
 
 ## Security Notes
 
+- All sensitive configuration (API keys, secrets, database credentials) stored in `backend/.env` - never in frontend code
 - Passwords are hashed using bcrypt before storing
 - JWT tokens used for authentication (24h expiry)
 - API endpoints protected with Bearer token middleware
