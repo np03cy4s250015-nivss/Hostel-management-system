@@ -375,106 +375,36 @@ async function initUserNotifications() {
     updateUserNotificationBadge();
     
     await checkForUserNotifications();
-    userNotificationCheckInterval = setInterval(checkForUserNotifications, 30000);
+    // Poll for new notifications every 2 seconds for near real-time updates
+    userNotificationCheckInterval = setInterval(checkForUserNotifications, 2000);
 }
 
 async function checkForUserNotifications() {
     try {
-        const noticesRes = await fetch(`${DATA_API_BASE_URL}/notices`, {
+        const response = await fetch(`${DATA_API_BASE_URL}/notifications`, {
             headers: { 'Authorization': `Bearer ${getAuthToken()}` }
         });
-        const notices = await noticesRes.json();
         
-        const currentNoticeIds = notices.map(n => n.id);
+        if (!response.ok) throw new Error('Failed to fetch notifications');
         
-        notices.forEach(n => {
-            if (!previousNotices.includes(n.id)) {
-                const exists = userNotifications.some(notif => notif.type === 'notice' && notif.refId === n.id);
-                if (!exists) {
-                    addUserNotification({
-                        type: 'notice',
-                        title: 'New Notice Posted',
-                        message: n.title,
-                        refId: n.id
-                    });
-                }
+        const apiNotifications = await response.json();
+        
+        // Get existing notification IDs from local storage
+        const existingIds = userNotifications.map(n => n.id);
+        
+        // Add only new notifications from API
+        apiNotifications.forEach(n => {
+            if (!existingIds.includes(n.id)) {
+                addUserNotification({
+                    type: n.type,
+                    title: n.title,
+                    message: n.message,
+                    refId: n.refId,
+                    timestamp: n.timestamp,
+                    status: n.status
+                });
             }
         });
-        previousNotices = currentNoticeIds;
-        
-        const complaintsRes = await fetch(`${DATA_API_BASE_URL}/complaints`, {
-            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-        });
-        const complaints = await complaintsRes.json();
-        
-        const currentComplaintIds = complaints.map(c => c.id);
-        
-        complaints.forEach(c => {
-            const prevComplaint = previousComplaints.find(pc => pc.id === c.id);
-            
-            if (prevComplaint && prevComplaint.status !== c.status) {
-                const exists = userNotifications.some(notif => notif.type === `complaint-${c.status}` && notif.refId === c.id);
-                if (!exists) {
-                    if (c.status === 'resolved') {
-                        addUserNotification({
-                            type: 'complaint-resolved',
-                            title: 'Complaint Resolved',
-                            message: `Your ${c.category} complaint has been resolved`,
-                            refId: c.id
-                        });
-                    } else if (c.status === 'in_progress') {
-                        addUserNotification({
-                            type: 'complaint-progress',
-                            title: 'Complaint In Progress',
-                            message: `Your ${c.category} complaint is now being worked on`,
-                            refId: c.id
-                        });
-                    } else if (c.status === 'rejected') {
-                        addUserNotification({
-                            type: 'request-rejected',
-                            title: 'Complaint Rejected',
-                            message: `Your ${c.category} complaint has been rejected`,
-                            refId: c.id
-                        });
-                    }
-                }
-            }
-        });
-        previousComplaints = complaints;
-        
-        const requestsRes = await fetch(`${DATA_API_BASE_URL}/my-settings-requests`, {
-            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-        });
-        if (requestsRes.ok) {
-            const requests = await requestsRes.json();
-            const currentRequestIds = requests.map(r => r.id);
-            
-            requests.forEach(r => {
-                if (r.status === 'approved' || r.status === 'rejected') {
-                    const exists = userNotifications.some(notif => 
-                        (notif.type === 'request-approved' || notif.type === 'request-rejected') && 
-                        notif.refId === r.id
-                    );
-                    if (!exists) {
-                        if (r.status === 'approved') {
-                            addUserNotification({
-                                type: 'request-approved',
-                                title: 'Request Approved',
-                                message: `Your ${r.setting_type} change request has been approved`,
-                                refId: r.id
-                            });
-                        } else if (r.status === 'rejected') {
-                            addUserNotification({
-                                type: 'request-rejected',
-                                title: 'Request Rejected',
-                                message: `Your ${r.setting_type} change request has been rejected`,
-                                refId: r.id
-                            });
-                        }
-                    }
-                }
-            });
-        }
         
     } catch (error) {
         console.error('Error checking for user notifications:', error);

@@ -583,4 +583,109 @@ router.put('/settings-requests/:id', async (req, res) => {
     }
 });
 
+// Get notifications for admin
+router.get('/notifications', async (req, res) => {
+    try {
+        const role = req.user.role;
+        const userId = req.user.id;
+        const notifications = [];
+        
+        if (role === 'admin') {
+            // Get pending complaints
+            const [complaints] = await db.execute(`
+                SELECT c.id, c.category, c.description, c.status, c.created_at,
+                       u.first_name, u.last_name
+                FROM complaints c
+                JOIN students s ON c.student_id = s.id
+                JOIN users u ON s.user_id = u.id
+                WHERE c.status IN ('pending', 'in_progress')
+                ORDER BY c.created_at DESC
+                LIMIT 10
+            `);
+            
+            complaints.forEach(c => {
+                notifications.push({
+                    id: `complaint_${c.id}`,
+                    type: 'complaint',
+                    title: c.status === 'pending' ? 'New Complaint' : 'Complaint Update',
+                    message: `${c.first_name} ${c.last_name} - ${c.category}`,
+                    refId: c.id,
+                    timestamp: c.created_at,
+                    status: c.status
+                });
+            });
+            
+            // Get pending room change requests
+            const [requests] = await db.execute(`
+                SELECT id, setting_type, old_value, new_value, status, created_at
+                FROM settings_requests
+                WHERE status = 'pending'
+                ORDER BY created_at DESC
+                LIMIT 10
+            `);
+            
+            requests.forEach(r => {
+                notifications.push({
+                    id: `request_${r.id}`,
+                    type: 'request',
+                    title: 'Setting Change Request',
+                    message: `${r.setting_type}: ${r.old_value} → ${r.new_value}`,
+                    refId: r.id,
+                    timestamp: r.created_at,
+                    status: r.status
+                });
+            });
+        } else if (role === 'student') {
+            // Get complaints for this student
+            const [complaints] = await db.execute(`
+                SELECT id, category, description, status, created_at
+                FROM complaints
+                WHERE student_id = (SELECT id FROM students WHERE user_id = ?)
+                ORDER BY created_at DESC
+                LIMIT 10
+            `, [userId]);
+            
+            complaints.forEach(c => {
+                notifications.push({
+                    id: `complaint_${c.id}`,
+                    type: 'complaint',
+                    title: c.status === 'resolved' ? 'Complaint Resolved' : 'Complaint Update',
+                    message: `Your ${c.category} complaint has been ${c.status}`,
+                    refId: c.id,
+                    timestamp: c.created_at,
+                    status: c.status
+                });
+            });
+            
+            // Get notices
+            const [notices] = await db.execute(`
+                SELECT id, title, content, created_at
+                FROM notices
+                ORDER BY created_at DESC
+                LIMIT 10
+            `);
+            
+            notices.forEach(n => {
+                notifications.push({
+                    id: `notice_${n.id}`,
+                    type: 'notice',
+                    title: n.title,
+                    message: n.content.substring(0, 50) + (n.content.length > 50 ? '...' : ''),
+                    refId: n.id,
+                    timestamp: n.created_at,
+                    status: 'active'
+                });
+            });
+        }
+        
+        // Sort by timestamp descending
+        notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        res.json(notifications);
+    } catch (error) {
+        console.error('Notifications error:', error);
+        res.status(500).json({ error: 'Failed to fetch notifications' });
+    }
+});
+
 module.exports = router;

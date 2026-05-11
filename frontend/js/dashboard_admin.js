@@ -1135,58 +1135,44 @@ async function initAdminNotifications() {
     updateNotificationBadge();
     
     await checkForNewNotifications();
-    notificationCheckInterval = setInterval(checkForNewNotifications, 30000);
+    // Poll for new notifications every 2 seconds for near real-time updates
+    notificationCheckInterval = setInterval(checkForNewNotifications, 2000);
 }
 
 async function checkForNewNotifications() {
     try {
-        const complaintsRes = await fetch(`${DATA_API_BASE_URL}/complaints?status=pending`, {
+        const response = await fetch(`${DATA_API_BASE_URL}/notifications`, {
             headers: { 'Authorization': `Bearer ${getAuthToken()}` }
         });
-        const complaints = await complaintsRes.json();
         
-        const prevComplaints = JSON.parse(localStorage.getItem(getPreviousComplaintsKey()) || '[]');
-        const currentComplaintIds = complaints.map(c => c.id);
+        if (!response.ok) throw new Error('Failed to fetch notifications');
         
-        complaints.forEach(c => {
-            if (!prevComplaints.includes(c.id)) {
-                const exists = adminNotifications.some(n => n.type === 'complaint' && n.refId === c.id);
-                if (!exists) {
-                    addNotification({
-                        type: 'complaint',
-                        title: 'New Complaint Received',
-                        message: `${c.first_name} ${c.last_name} filed a new ${c.category} complaint`,
-                        refId: c.id
-                    });
-                }
+        const apiNotifications = await response.json();
+        
+        // Get existing notification IDs from local storage
+        const existingIds = adminNotifications.map(n => n.id);
+        
+        // Add only new notifications from API
+        apiNotifications.forEach(n => {
+            if (!existingIds.includes(n.id)) {
+                addNotification({
+                    type: n.type,
+                    title: n.title,
+                    message: n.message,
+                    refId: n.refId,
+                    timestamp: n.timestamp,
+                    status: n.status
+                });
             }
         });
         
-        localStorage.setItem(getPreviousComplaintsKey(), JSON.stringify(currentComplaintIds));
-        
-        const requestsRes = await fetch(`${DATA_API_BASE_URL}/settings-requests?status=pending`, {
-            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-        });
-        const requests = await requestsRes.json();
-        
-        const prevRequests = JSON.parse(localStorage.getItem(getPreviousRequestsKey()) || '[]');
-        const currentRequestIds = requests.map(r => r.id);
-        
-        requests.forEach(r => {
-            if (!prevRequests.includes(r.id)) {
-                const exists = adminNotifications.some(n => n.type === 'request' && n.refId === r.id);
-                if (!exists) {
-                    addNotification({
-                        type: 'request',
-                        title: 'New Approval Request',
-                        message: `${r.requested_by_username} requested to change ${r.setting_type}`,
-                        refId: r.id
-                    });
-                }
-            }
-        });
-        
-        localStorage.setItem(getPreviousRequestsKey(), JSON.stringify(currentRequestIds));
+        // Update local storage with latest data
+        localStorage.setItem(getPreviousComplaintsKey(), JSON.stringify(
+            apiNotifications.filter(n => n.type === 'complaint').map(n => n.refId)
+        ));
+        localStorage.setItem(getPreviousRequestsKey(), JSON.stringify(
+            apiNotifications.filter(n => n.type === 'request').map(n => n.refId)
+        ));
         
     } catch (error) {
         console.error('Error checking for notifications:', error);
