@@ -9,8 +9,17 @@
 </head>
 <body>
     <div class="dashboard-container">
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        
         <!-- Sidebar -->
         <aside class="sidebar">
+            <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
             <div class="sidebar-header">
                 <img src="logo.png" alt="HMS Logo" width="200px" height="64">
             </div>
@@ -18,7 +27,7 @@
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <span class="nav-section-title">Main</span>
-                    <a href="#" class="nav-item active" onclick="showSection('dashboard')">
+                    <a href="#" class="nav-item active" onclick="showSection('dashboard'); closeSidebarOnMobile();">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="7" height="7"></rect>
                             <rect x="14" y="3" width="7" height="7"></rect>
@@ -31,7 +40,7 @@
                 
                 <div class="nav-section">
                     <span class="nav-section-title">Services</span>
-                    <a href="#complaints" class="nav-item" onclick="showSection('complaints')">
+                    <a href="#complaints" class="nav-item" onclick="showSection('complaints'); closeSidebarOnMobile();">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                         </svg>
@@ -41,21 +50,21 @@
                 
                  <div class="nav-section">
                      <span class="nav-section-title">Account</span>
-                     <a href="#profile" class="nav-item" onclick="showSection('profile')">
+                     <a href="#profile" class="nav-item" onclick="showSection('profile'); closeSidebarOnMobile();">
                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                              <circle cx="12" cy="7" r="4"></circle>
                          </svg>
                          <span>My Profile</span>
                      </a>
-                     <a href="#settings" class="nav-item" onclick="showSection('settings')">
+                     <a href="#settings" class="nav-item" onclick="showSection('settings'); closeSidebarOnMobile();">
                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                              <circle cx="12" cy="12" r="3"></circle>
                              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                          </svg>
                          <span>Settings</span>
                      </a>
-                     <a href="#notices" class="nav-item" onclick="showSection('notices')">
+                     <a href="#notices" class="nav-item" onclick="showSection('notices'); closeSidebarOnMobile();">
                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                              <polyline points="14 2 14 8 20 8"></polyline>
@@ -84,7 +93,7 @@
             <!-- Top Header -->
             <header class="top-header">
                 <div class="header-left">
-                    <button class="menu-toggle">
+                    <button type="button" class="menu-toggle" id="menuToggleBtn" onclick="document.querySelector('.sidebar').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active');">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="3" y1="12" x2="21" y2="12"></line>
                             <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -132,7 +141,7 @@
             <!-- Content Area -->
             <div class="content-area">
                 <!-- Stats Cards -->
-                <div class="stats-grid">
+                <div class="stats-grid-user">
                     <div class="stat-card">
                         <div class="stat-icon pink">
                             <img src="assets/icons/room.png" alt="Room">

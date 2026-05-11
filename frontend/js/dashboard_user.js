@@ -632,3 +632,64 @@ document.addEventListener('click', function(e) {
 if (document.getElementById('notificationBell')) {
     initUserNotifications();
 }
+
+// Mobile menu toggle - always add this listener
+document.addEventListener('DOMContentLoaded', function() {
+    const menuBtn = document.getElementById('menuToggleBtn');
+    const closeBtn = document.getElementById('sidebarCloseBtn');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    function toggleMenu(show) {
+        const sidebar = document.querySelector('.sidebar');
+        if (!sidebar) {
+            console.log('Sidebar not found');
+            return;
+        }
+        
+        const shouldShow = show === undefined ? !sidebar.classList.contains('active') : show;
+        sidebar.classList.toggle('active', shouldShow);
+        if (sidebarOverlay) sidebarOverlay.classList.toggle('active', shouldShow);
+        document.body.style.overflow = shouldShow ? 'hidden' : '';
+    }
+
+    if (menuBtn) {
+        console.log('Menu button found, adding click listener');
+        menuBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMenu();
+        });
+    } else {
+        console.log('Menu button NOT found');
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleMenu(false);
+        });
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleMenu(false);
+        });
+    }
+    
+    // Also handle window resize to ensure visibility
+    window.addEventListener('resize', function() {
+        console.log('Window width:', window.innerWidth);
+    });
+});
+
+// Close sidebar on mobile when nav item is clicked
+function closeSidebarOnMobile() {
+    if (window.innerWidth <= 1024) {
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        if (sidebar) sidebar.classList.remove('active');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}

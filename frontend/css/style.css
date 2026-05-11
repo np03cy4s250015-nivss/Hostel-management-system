@@ -50,6 +50,7 @@ body {
     color: var(--gray-800);
     line-height: 1.6;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 a {
@@ -182,6 +183,52 @@ a:hover {
     font-weight: 600;
     color: var(--gray-700);
     font-size: 0.9rem;
+}
+
+/* Form Group Dash (for dashboard forms) */
+.form-group-dash {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group-dash label {
+    font-weight: 600;
+    color: var(--gray-700);
+    font-size: 0.9rem;
+}
+
+.form-group-dash input,
+.form-group-dash select,
+.form-group-dash textarea {
+    padding: 12px 14px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    font-size: 0.95rem;
+    transition: var(--transition);
+    min-height: 48px;
+    background: white;
+    color: var(--gray-800);
+}
+
+.form-group-dash input:focus,
+.form-group-dash select:focus,
+.form-group-dash textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-group-dash input::placeholder {
+    color: var(--gray-400);
+}
+
+/* Form Row */
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: clamp(15px, 2vw, 20px);
+    margin-bottom: 20px;
 }
 
 .input-wrapper {
@@ -340,6 +387,7 @@ a:hover {
 .dashboard-container {
     display: flex;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 /* Sidebar Styles */
@@ -410,6 +458,17 @@ a:hover {
     border-left: 3px solid transparent;
 }
 
+@media (max-width: 768px) {
+    .nav-item {
+        padding: 14px 20px;
+        gap: 14px;
+    }
+    
+    .nav-item span {
+        font-size: 0.95rem;
+    }
+}
+
 .nav-item:hover {
     background-color: rgba(79, 70, 229, 0.2);
     color: white;
@@ -431,6 +490,30 @@ a:hover {
     padding: 15px 20px;
     border-top: 1px solid var(--gray-700);
     flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .sidebar-footer {
+        padding: 12px 15px;
+    }
+    
+    .user-info {
+        gap: 10px;
+    }
+    
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 0.8rem;
+    }
+    
+    .user-details .name {
+        font-size: 0.85rem;
+    }
+    
+    .user-details .role {
+        font-size: 0.75rem;
+    }
 }
 
 .user-info {
@@ -469,6 +552,7 @@ a:hover {
     flex: 1;
     margin-left: 260px;
     background-color: var(--gray-100);
+    overflow-x: hidden;
 }
 
 /* Top Header */
@@ -492,10 +576,86 @@ a:hover {
 
 .menu-toggle {
     display: none;
-    background: none;
+    background: var(--gray-100);
     border: none;
     cursor: pointer;
-    padding: 5px;
+    padding: 8px;
+    border-radius: 8px;
+    transition: var(--transition);
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.menu-toggle:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.menu-toggle:hover {
+    background: rgba(79, 70, 229, 0.1);
+}
+
+.menu-toggle svg {
+    transition: transform 0.3s ease;
+    display: block;
+}
+
+.menu-toggle.active svg {
+    transform: rotate(90deg);
+}
+
+/* Mobile - show hamburger */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: flex;
+    }
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Sidebar Close Button (Mobile) */
+.sidebar-close-btn {
+    display: none;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.sidebar-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+    .sidebar-close-btn {
+        display: flex;
+    }
 }
 
 .page-title {
@@ -522,10 +682,11 @@ a:hover {
     background: var(--gray-100);
     cursor: pointer;
     transition: var(--transition);
+    flex-shrink: 0;
 }
 
 .header-icon:hover {
-    background: #fce7f3;
+    background: rgba(79, 70, 229, 0.1);
 }
 
 .notification-badge {
@@ -559,24 +720,25 @@ a:hover {
 /* Content Area */
 .content-area {
     padding: 30px;
+    overflow-x: hidden;
 }
 
 /* Stats Cards */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, clamp(180px, 25vw, 280px));
+    gap: clamp(12px, 2vw, 20px);
     margin-bottom: 30px;
 }
 
 .stat-card {
     background: white;
     border-radius: var(--border-radius-lg);
-    padding: 20px;
+    padding: clamp(12px, 2vw, 20px);
     box-shadow: 0 4px 20px rgba(79, 70, 229, 0.08);
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: clamp(10px, 2vw, 15px);
     transition: var(--transition);
     border: 1px solid rgba(79, 70, 229, 0.1);
 }
@@ -587,17 +749,18 @@ a:hover {
 }
 
 .stat-icon {
-    width: 50px;
-    height: 50px;
+    width: clamp(40px, 6vw, 50px);
+    height: clamp(40px, 6vw, 50px);
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .stat-icon img {
-    width: 28px;
-    height: 28px;
+    width: clamp(20px, 4vw, 28px);
+    height: clamp(20px, 4vw, 28px);
     object-fit: contain;
 }
 
@@ -642,111 +805,51 @@ a:hover {
     font-size: 0.9rem;
 }
 
-/* Card Component */
-.card {
-    background: white;
-    border-radius: var(--border-radius-lg);
-    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.08);
-    margin-bottom: 20px;
-    border: 1px solid rgba(79, 70, 229, 0.1);
-    transition: var(--transition);
-}
-
-.card:hover {
-    box-shadow: 0 8px 30px rgba(79, 70, 229, 0.15);
-    transform: translateY(-2px);
-}
-
-.card-header {
-    padding: 20px;
-    border-bottom: 1px solid #fce7f3;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(to right, rgba(79, 70, 229, 0.03), transparent);
-}
-
-.card-header h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-.card-body {
-    padding: 20px;
-}
-
-/* Table Styles */
-.table-responsive {
-    overflow-x: auto;
-}
-
-table {
+/* ============================================
+   User Dashboard Stats - Separate from Admin
+   ============================================ */
+.stats-grid-user {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(10px, 2vw, 15px);
+    margin-bottom: 30px;
     width: 100%;
-    border-collapse: collapse;
+    box-sizing: border-box;
 }
 
-table th,
-table td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid var(--gray-200);
+@media (max-width: 1200px) {
+    .stats-grid-user {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
-table th {
-    background: var(--gray-100);
-    font-weight: 600;
-    color: var(--gray-700);
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+@media (max-width: 900px) {
+    .stats-grid-user {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
-table td {
-    color: var(--gray-600);
+@media (max-width: 600px) {
+    .stats-grid-user {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
 }
 
-table tbody tr:hover {
-    background: var(--gray-100);
+@media (max-width: 400px) {
+    .stats-grid-user {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
 }
 
-/* Badge Styles */
-.badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.badge-success {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
-}
-
-.badge-warning {
-    background: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
-}
-
-.badge-danger {
-    background: rgba(244, 63, 94, 0.1);
-    color: #f43f5e;
-}
-
-.badge-info {
-    background: rgba(168, 85, 247, 0.1);
-    color: #a855f7;
-}
-
-.badge-primary {
-    background: rgba(79, 70, 229, 0.1);
-    color: var(--primary-color);
-}
-
-/* Button Styles */
+/* ============================================
+   Button Styles
+   ============================================ */
 .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 10px 20px;
     border: none;
@@ -755,62 +858,82 @@ table tbody tr:hover {
     font-weight: 500;
     cursor: pointer;
     transition: var(--transition);
+    min-height: 44px;
+    text-decoration: none;
+}
+
+.btn-sm {
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    min-height: 36px;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     color: white;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 .btn-secondary {
-    background: #e0e7ff;
-    color: #4338ca;
+    background: white;
+    color: var(--gray-700);
+    border: 1.5px solid var(--gray-300);
 }
 
 .btn-secondary:hover {
-    background: #c7d2fe;
-    color: #3730a3;
-}
-
-.btn-secondary:hover {
-    background: #c7d2fe;
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(79, 70, 229, 0.03);
 }
 
 .btn-danger {
-    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+    background: var(--danger-color);
     color: white;
 }
 
-.btn-sm {
-    padding: 6px 12px;
-    font-size: 0.8rem;
+.btn-danger:hover {
+    background: #dc2626;
 }
 
-/* Action Buttons */
+/* ============================================
+   Action Buttons (Edit, View, Delete)
+   ============================================ */
 .action-btns {
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    align-items: center;
 }
 
 .action-btn {
-    width: 32px;
-    height: 32px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 32px;
+    height: 32px;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: var(--transition);
+    padding: 0;
+}
+
+.action-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.action-btn.view {
+    background: rgba(14, 165, 233, 0.1);
+    color: var(--secondary-color);
+}
+
+.action-btn.view:hover {
+    background: var(--secondary-color);
+    color: white;
 }
 
 .action-btn.edit {
@@ -824,74 +947,150 @@ table tbody tr:hover {
 }
 
 .action-btn.delete {
-    background: rgba(244, 63, 94, 0.1);
-    color: #f43f5e;
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
 }
 
 .action-btn.delete:hover {
-    background: #f43f5e;
+    background: var(--danger-color);
     color: white;
 }
 
-.action-btn.view {
-    background: rgba(14, 165, 233, 0.1);
-    color: var(--secondary-color);
+/* Mobile action buttons - larger touch targets */
+@media (max-width: 768px) {
+    .action-btns {
+        gap: 8px;
+    }
+    
+    .action-btn {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .action-btn svg {
+        width: 18px;
+        height: 18px;
+    }
 }
 
-.action-btn.view:hover {
-    background: var(--secondary-color);
-    color: white;
+@media (max-width: 480px) {
+    .action-btn {
+        width: 34px;
+        height: 34px;
+    }
+    
+    .action-btn svg {
+        width: 16px;
+        height: 16px;
+    }
 }
 
-/* Grid Layouts */
-.grid-2 {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+.stats-grid-user .stat-card {
+    padding: clamp(10px, 2vw, 15px);
+    gap: clamp(8px, 1.5vw, 10px);
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
-.grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+.stats-grid-user .stat-icon {
+    width: clamp(32px, 5vw, 40px);
+    height: clamp(32px, 5vw, 40px);
 }
 
-/* Form Styles for Dashboard */
-.form-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+.stats-grid-user .stat-icon img {
+    width: clamp(16px, 3vw, 20px);
+    height: clamp(16px, 3vw, 20px);
+}
+
+.stats-grid-user .stat-details h3 {
+    font-size: clamp(0.9rem, 2vw, 1.2rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stats-grid-user .stat-details p {
+    font-size: clamp(0.7rem, 1.5vw, 0.8rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Card Component */
+.card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.08);
     margin-bottom: 20px;
+    border: 1px solid rgba(79, 70, 229, 0.1);
+    transition: var(--transition);
+    overflow: hidden;
 }
 
-.form-group-dash {
+.card:hover {
+    box-shadow: 0 8px 30px rgba(79, 70, 229, 0.15);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    padding: clamp(12px, 3vw, 20px);
+    border-bottom: 1px solid var(--gray-300);
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: linear-gradient(to right, rgba(79, 70, 229, 0.03), transparent);
 }
 
-.form-group-dash label {
+.card-header h3 {
+    font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+    font-weight: 600;
+}
+
+.card-body {
+    padding: clamp(12px, 3vw, 20px);
+}
+
+/* Table Styles */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive table {
+    min-width: 600px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table th,
+table td {
+    padding: clamp(8px, 2vw, 12px) clamp(10px, 2vw, 15px);
+    text-align: left;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+table th {
+    background: var(--gray-100);
     font-weight: 600;
     color: var(--gray-700);
-    font-size: 0.9rem;
+    font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
-.form-group-dash input,
-.form-group-dash select,
-.form-group-dash textarea {
-    padding: 10px 12px;
-    border: 2px solid var(--gray-200);
-    border-radius: var(--border-radius);
-    font-size: 0.95rem;
-    transition: var(--transition);
+table td {
+    color: var(--gray-600);
+    font-size: clamp(0.85rem, 1.5vw, 0.95rem);
 }
 
-.form-group-dash input:focus,
-.form-group-dash select:focus,
-.form-group-dash textarea:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+table tbody tr:hover {
+    background: var(--gray-100);
 }
 
 /* Modal Styles */
@@ -915,11 +1114,37 @@ table tbody tr:hover {
 .modal-content {
     background: white;
     border-radius: var(--border-radius-lg);
-    width: 90%;
+    width: clamp(90%, 500px, 95%);
     max-width: 500px;
-    max-height: 90vh;
+    max-height: 85vh;
     overflow-y: auto;
     animation: modalSlide 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        max-height: 85vh;
+        margin: 10px;
+    }
+    
+    .modal-header {
+        padding: 15px;
+    }
+    
+    .modal-body {
+        padding: 15px;
+    }
+    
+    .modal-footer {
+        padding: 15px;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+    }
 }
 
 @keyframes modalSlide {
@@ -1044,20 +1269,27 @@ table tbody tr:hover {
 /* ============================================
    Responsive Styles
    ============================================ */
-@media (max-width: 1024px) {
-    .grid-2,
-    .grid-3 {
-        grid-template-columns: 1fr;
+
+/* Tablet Breakpoint (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
     
-    .form-row {
-        grid-template-columns: 1fr;
+    .grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .sidebar {
+        width: 220px;
     }
 }
 
+/* Mobile Breakpoint (< 768px) */
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
+        width: 280px;
     }
     
     .sidebar.active {
@@ -1069,31 +1301,202 @@ table tbody tr:hover {
     }
     
     .menu-toggle {
-        display: block;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
     }
     
+    .menu-toggle svg {
+        width: 28px;
+        height: 28px;
+    }
+    
+    /* Stats Grid - 2 columns with horizontal scroll */
     .stats-grid {
+        display: flex;
+        overflow-x: auto;
+        gap: 12px;
+        padding: 10px 0;
+        padding-bottom: 10px;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+    
+    .stats-grid .stat-card {
+        flex: 0 0 calc(50% - 6px);
+        min-width: 140px;
+        scroll-snap-align: start;
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 12px;
+        gap: 10px;
+    }
+    
+    .stats-grid .stat-icon {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+    }
+    
+    .stats-grid .stat-icon img {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .stats-grid .stat-details h3 {
+        font-size: 1.25rem;
+    }
+    
+    .stats-grid .stat-details p {
+        font-size: 0.75rem;
+    }
+    
+    /* User Dashboard Stats - sizing adjustments */
+    .stats-grid-user .stat-card {
+        padding: 10px;
+        gap: 8px;
+    }
+    
+    .stats-grid-user .stat-icon {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .stats-grid-user .stat-icon img {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .stats-grid-user .stat-details h3 {
+        font-size: 0.9rem;
+    }
+    
+    .stats-grid-user .stat-details p {
+        font-size: 0.65rem;
+    }
+    
+    /* Card header buttons - more compact */
+    .card-header .btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .card-header .btn svg {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .grid-2,
+    .grid-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row {
         grid-template-columns: 1fr;
     }
     
     .content-area {
-        padding: 20px;
+        padding: clamp(15px, 4vw, 20px);
     }
     
     .top-header {
-        padding: 15px 20px;
+        padding: clamp(10px, 3vw, 15px) clamp(15px, 4vw, 20px);
+    }
+    
+    .page-title {
+        font-size: clamp(1rem, 3vw, 1.25rem);
     }
 }
 
 @media (max-width: 480px) {
     .login-card {
-        padding: 30px 20px;
+        padding: clamp(20px, 5vw, 30px) clamp(15px, 4vw, 20px);
     }
     
     .form-options {
         flex-direction: column;
         gap: 10px;
         align-items: flex-start;
+    }
+    
+    /* Content area - prevent overflow */
+    .content-area {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    /* Smaller stats cards for very small screens - 2x2 grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        overflow-x: visible;
+    }
+    
+    .stats-grid .stat-card {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        padding: 8px;
+    }
+    
+    .stats-grid .stat-icon {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .stats-grid .stat-icon img {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .stats-grid .stat-details h3 {
+        font-size: 0.85rem;
+    }
+    
+    .stats-grid .stat-details p {
+        font-size: 0.6rem;
+    }
+    
+    /* User Dashboard Stats - smaller screens */
+    .stats-grid-user .stat-card {
+        padding: 8px;
+        gap: 6px;
+    }
+    
+    .stats-grid-user .stat-icon {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .stats-grid-user .stat-icon img {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .stats-grid-user .stat-details h3 {
+        font-size: 0.8rem;
+    }
+    
+    .stats-grid-user .stat-details p {
+        font-size: 0.6rem;
+    }
+    
+    .summary-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 98%;
+        margin: 10px;
+    }
+    
+    table {
+        font-size: 0.85rem;
     }
 }
 
@@ -1113,13 +1516,15 @@ table tbody tr:hover {
     justify-content: space-between;
     align-items: center;
     padding: 15px;
-    background: #fce7f3;
+    background: white;
+    border: 1px solid rgba(79, 70, 229, 0.1);
     border-radius: var(--border-radius);
     transition: var(--transition);
 }
 
 .notice-item-admin:hover {
-    background: #e0e7ff;
+    background: var(--gray-100);
+    border-color: var(--primary-color);
     transform: translateY(-2px);
 }
 
@@ -1264,12 +1669,12 @@ table tbody tr:hover {
 /* Summary Cards */
 .summary-cards {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: clamp(10px, 2vw, 15px);
 }
 
 .summary-card {
-    padding: 15px;
+    padding: clamp(10px, 2vw, 15px);
     border-radius: var(--border-radius);
     text-align: center;
 }
@@ -1339,7 +1744,8 @@ table tbody tr:hover {
     display: flex;
     gap: 15px;
     padding: 12px;
-    background: #fce7f3;
+    background: white;
+    border: 1px solid rgba(79, 70, 229, 0.1);
     border-radius: var(--border-radius);
     transition: var(--transition);
 }
@@ -1439,7 +1845,7 @@ table tbody tr:hover {
 
 .profile-details {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
 }
 
@@ -1464,9 +1870,21 @@ table tbody tr:hover {
    Additional Responsive Styles for Dashboard
    ============================================ */
 
+/* Tablet specific */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .profile-details {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .notice-item-admin {
+        flex-wrap: wrap;
+    }
+}
+
+/* Additional Mobile Fixes */
 @media (max-width: 1024px) {
     .summary-cards {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     }
 }
 
@@ -1713,6 +2131,22 @@ table tbody tr:hover {
     max-width: 600px;
 }
 
+@media (max-width: 768px) {
+    .settings-form {
+        max-width: 100%;
+    }
+    
+    .form-section {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+    }
+    
+    .section-title {
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+    }
+}
+
 .form-section {
     margin-bottom: 30px;
     padding-bottom: 25px;
@@ -1765,6 +2199,18 @@ table tbody tr:hover {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+}
+
+/* Mobile notification popup */
+@media (max-width: 480px) {
+    .notification-popup {
+        position: fixed;
+        top: 60px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        max-height: calc(100vh - 80px);
+    }
 }
 
 [data-theme="dark"] .notification-popup {
