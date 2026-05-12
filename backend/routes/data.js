@@ -618,7 +618,7 @@ router.get('/notifications', async (req, res) => {
             // Get pending room change requests
             const [requests] = await db.execute(`
                 SELECT id, setting_type, old_value, new_value, status, created_at
-                FROM settings_requests
+                FROM settings_change_requests
                 WHERE status = 'pending'
                 ORDER BY created_at DESC
                 LIMIT 10

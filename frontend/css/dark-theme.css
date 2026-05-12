@@ -165,6 +165,128 @@
     background-image: none;
 }
 
+[data-theme="dark"] .table-filters {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: var(--gray-400);
+}
+
+[data-theme="dark"] .filter-input,
+[data-theme="dark"] .filter-select {
+    background: var(--gray-200);
+    border-color: var(--gray-400);
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .filter-input:focus,
+[data-theme="dark"] .filter-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+    background: var(--gray-100);
+}
+
+[data-theme="dark"] .filter-input::placeholder {
+    color: var(--gray-500);
+}
+
+[data-theme="dark"] .filter-group:has(.filter-select)::after {
+    border-top-color: var(--gray-500);
+}
+
+[data-theme="dark"] .sort-toggle-btn {
+    background: var(--gray-200);
+    border-color: var(--gray-400);
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .sort-toggle-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(96, 165, 250, 0.1);
+}
+
+[data-theme="dark"] .view-toggle-group {
+    border-color: var(--gray-400);
+}
+
+[data-theme="dark"] .view-toggle-btn {
+    background: var(--gray-200);
+    color: var(--gray-500);
+}
+
+[data-theme="dark"] .view-toggle-btn:hover {
+    background: var(--gray-300);
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .view-toggle-btn:first-child {
+    border-right-color: var(--gray-400);
+}
+
+[data-theme="dark"] .sort-btn.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+[data-theme="dark"] .management-card {
+    background: var(--gray-200);
+    border-color: var(--gray-300);
+}
+
+[data-theme="dark"] .management-card:hover {
+    border-color: var(--gray-400);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .management-card-top {
+    border-bottom-color: var(--gray-300);
+}
+
+[data-theme="dark"] .management-card-id {
+    color: var(--gray-500);
+}
+
+[data-theme="dark"] .management-card-title {
+    color: var(--gray-700);
+}
+
+[data-theme="dark"] .management-card-info {
+    color: var(--gray-500);
+}
+
+[data-theme="dark"] .management-card-info .info-row svg {
+    color: var(--gray-500);
+}
+
+[data-theme="dark"] .management-card-info .info-label {
+    color: var(--gray-500);
+}
+
+[data-theme="dark"] .management-card-actions {
+    border-top-color: var(--gray-300);
+}
+
+[data-theme="dark"] .management-card-actions .btn-secondary {
+    background: var(--gray-300);
+    color: var(--gray-600);
+    border-color: var(--gray-400);
+}
+
+[data-theme="dark"] .management-card-actions .btn-secondary:hover {
+    background: var(--gray-400);
+}
+
+[data-theme="dark"] .management-card-actions .btn-primary {
+    background: var(--primary-color);
+}
+
+[data-theme="dark"] .management-card-actions .btn-primary:hover {
+    background: var(--primary-light);
+}
+
+[data-theme="dark"] .management-card-actions .btn-danger {
+    background: var(--danger-color);
+}
+
 /* Table */
 [data-theme="dark"] table th {
     background: var(--gray-300);

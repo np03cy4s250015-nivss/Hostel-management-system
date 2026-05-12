@@ -4,6 +4,8 @@
 
 const DATA_API_BASE_URL = 'http://127.0.0.1:3000/api/data';
 let roomsData = []; // Store rooms data for dropdown
+let studentsData = []; // Store students data for filtering
+let complaintsData = []; // Store complaints data for filtering
 
 document.addEventListener('DOMContentLoaded', function() {
     initDashboard();
@@ -97,49 +99,300 @@ async function loadStudents() {
         if (!response.ok) throw new Error('Failed to fetch students');
         const students = await response.json();
         studentsData = students;
-        
-        const tbody = document.getElementById('studentsTableBody');
-        if (!tbody) return;
-        
-        if (students.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No students found</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = students.map(s => `
-            <tr>
-                <td>#${s.admission_number}</td>
-                <td>${s.first_name} ${s.last_name}</td>
-                <td>${s.room_number || '-'}</td>
-                <td>${s.email}</td>
-                <td><span class="badge badge-success">Active</span></td>
-                <td>
-                    <div class="action-btns">
-                        <button class="action-btn view" title="View" onclick="viewStudent(${s.id})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="7" r="3"></circle>
-                            </svg>
-                        </button>
-                        <button class="action-btn edit" title="Edit" onclick="editStudent(${s.id})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                        </button>
-                        <button class="action-btn delete" title="Delete" onclick="deleteStudent(${s.id})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        renderStudentsTable(students);
     } catch (error) {
         console.error('Error loading students:', error);
+        const tbody = document.getElementById('studentsTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger-color)">Failed to load students</td></tr>';
+        }
     }
+}
+
+function filterStudents() {
+    const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
+    const statusFilter = document.getElementById('studentStatusFilter').value;
+    
+    let filtered = studentsData.filter(s => {
+        const fullName = `${s.first_name} ${s.last_name}`.toLowerCase();
+        const matchesSearch = fullName.includes(searchTerm);
+        const matchesStatus = !statusFilter || s.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+    
+    filtered.sort((a, b) => {
+        const idA = parseInt(a.admission_number.replace(/\D/g, '')) || 0;
+        const idB = parseInt(b.admission_number.replace(/\D/g, '')) || 0;
+        return currentSortOrder === 'asc' ? idA - idB : idB - idA;
+    });
+    
+    if (studentViewMode === 'table') {
+        renderStudentsTable(filtered);
+    } else {
+        renderStudentsCardViewWithData(filtered);
+    }
+}
+
+function filterRooms() {
+    const floorFilter = document.getElementById('roomFloorFilter').value;
+    const statusFilter = document.getElementById('roomStatusFilter').value;
+    
+    let filtered = roomsData.filter(r => {
+        const matchesFloor = !floorFilter || r.floor === parseInt(floorFilter);
+        const matchesStatus = !statusFilter || r.status === statusFilter;
+        return matchesFloor && matchesStatus;
+    });
+    
+    if (roomViewMode === 'table') {
+        renderRoomsTable(filtered);
+    } else {
+        renderRoomsCardViewWithData(filtered);
+    }
+}
+
+function filterComplaints() {
+    const statusFilter = document.getElementById('complaintStatusFilter').value;
+    
+    let filtered = complaintsData.filter(c => {
+        return !statusFilter || c.status === statusFilter;
+    });
+    
+    if (complaintViewMode === 'table') {
+        renderComplaintsTable(filtered);
+    } else {
+        renderComplaintsCardViewWithData(filtered);
+    }
+}
+
+function renderStudentsCardViewWithData(students) {
+    const container = document.getElementById('studentsCardView');
+    
+    if (students.length === 0) {
+        container.innerHTML = '<p style="text-align:center;padding:20px;color:#999;grid-column:1/-1">No students found</p>';
+        return;
+    }
+    
+    container.innerHTML = students.map(s => `
+        <div class="management-card">
+            <div class="management-card-top">
+                <span class="management-card-id">#${s.admission_number}</span>
+                <span class="badge badge-success">${s.status || 'Active'}</span>
+            </div>
+            <div class="management-card-body">
+                <div class="management-card-title">${s.first_name} ${s.last_name}</div>
+                <div class="management-card-info">
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                        <span class="info-label">Room</span>
+                        <span>${s.room_number || '-'}</span>
+                    </div>
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        <span class="info-label">Email</span>
+                        <span>${s.email}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="management-card-actions">
+                <button class="btn btn-secondary" onclick="viewStudent(${s.id})">View</button>
+                <button class="btn btn-primary" onclick="editStudent(${s.id})">Edit</button>
+                <button class="btn btn-danger" onclick="deleteStudent(${s.id})">Delete</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderRoomsCardViewWithData(rooms) {
+    const container = document.getElementById('roomsCardView');
+    
+    if (rooms.length === 0) {
+        container.innerHTML = '<p style="text-align:center;padding:20px;color:#999;grid-column:1/-1">No rooms found</p>';
+        return;
+    }
+    
+    const statusMap = {
+        'available': 'badge-info',
+        'full': 'badge-success',
+        'maintenance': 'badge-warning'
+    };
+    
+    container.innerHTML = rooms.map(r => `
+        <div class="management-card">
+            <div class="management-card-top">
+                <span class="management-card-id">Room ${r.room_number}</span>
+                <span class="badge ${statusMap[r.status]}">${r.status === 'full' ? 'Occupied' : r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span>
+            </div>
+            <div class="management-card-body">
+                <div class="management-card-title">${r.floor}${getOrdinal(r.floor)} Floor</div>
+                <div class="management-card-info">
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                        <span class="info-label">Capacity</span>
+                        <span>${r.capacity}</span>
+                    </div>
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        <span class="info-label">Occupied</span>
+                        <span>${r.current_occupancy}</span>
+                    </div>
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+                        <span class="info-label">Type</span>
+                        <span>${r.capacity === 1 ? 'Single' : r.capacity === 2 ? 'Double' : 'Triple'}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="management-card-actions">
+                <button class="btn btn-primary" onclick="editRoom(${r.id})">Edit</button>
+                <button class="btn btn-danger" onclick="deleteRoom(${r.id})">Delete</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderComplaintsCardViewWithData(complaints) {
+    const container = document.getElementById('complaintsCardView');
+    
+    if (complaints.length === 0) {
+        container.innerHTML = '<p style="text-align:center;padding:20px;color:#999;grid-column:1/-1">No complaints found</p>';
+        return;
+    }
+    
+    const statusMap = {
+        'pending': { class: 'badge-danger', label: 'Pending' },
+        'in_progress': { class: 'badge-warning', label: 'In Progress' },
+        'resolved': { class: 'badge-success', label: 'Resolved' },
+        'rejected': { class: 'badge-secondary', label: 'Rejected' }
+    };
+    
+    container.innerHTML = complaints.map(c => `
+        <div class="management-card">
+            <div class="management-card-top">
+                <span class="management-card-id">#C${c.id}</span>
+                <span class="badge ${statusMap[c.status].class}">${statusMap[c.status].label}</span>
+            </div>
+            <div class="management-card-body">
+                <div class="management-card-title">${c.category}</div>
+                <div class="management-card-info">
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <span class="info-label">Student</span>
+                        <span>${c.first_name} ${c.last_name}</span>
+                    </div>
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <span class="info-label">Date</span>
+                        <span>${new Date(c.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        <span class="info-label">Desc</span>
+                        <span>${c.description.substring(0, 50)}...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="management-card-actions">
+                <button class="btn btn-secondary" onclick="viewComplaint(${c.id})">View</button>
+                <button class="btn btn-primary" onclick="updateComplaint(${c.id})">Update</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+let currentSortOrder = 'asc';
+let studentViewMode = 'table';
+let roomViewMode = 'table';
+let complaintViewMode = 'table';
+
+function toggleSortOrder() {
+    currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+    const btn = document.getElementById('sortToggle');
+    const svg = btn.querySelector('svg line');
+    const polyline = btn.querySelector('svg polyline');
+    
+    if (currentSortOrder === 'asc') {
+        svg.setAttribute('y1', '19');
+        svg.setAttribute('y2', '5');
+        polyline.setAttribute('points', '5 12 12 5 19 12');
+    } else {
+        svg.setAttribute('y1', '5');
+        svg.setAttribute('y2', '19');
+        polyline.setAttribute('points', '19 12 12 19 5 12');
+    }
+    
+    filterStudents();
+}
+
+function setStudentView(view) {
+    studentViewMode = view;
+    document.getElementById('studentsTableView').style.display = view === 'table' ? 'block' : 'none';
+    document.getElementById('studentsCardView').style.display = view === 'card' ? 'grid' : 'none';
+    document.querySelectorAll('#students .view-toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === view);
+    });
+    filterStudents();
+}
+
+function setRoomView(view) {
+    roomViewMode = view;
+    document.getElementById('roomsTableView').style.display = view === 'table' ? 'block' : 'none';
+    document.getElementById('roomsCardView').style.display = view === 'card' ? 'grid' : 'none';
+    document.querySelectorAll('#rooms .view-toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === view);
+    });
+    filterRooms();
+}
+
+function setComplaintView(view) {
+    complaintViewMode = view;
+    document.getElementById('complaintsTableView').style.display = view === 'table' ? 'block' : 'none';
+    document.getElementById('complaintsCardView').style.display = view === 'card' ? 'grid' : 'none';
+    document.querySelectorAll('#complaints .view-toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === view);
+    });
+    filterComplaints();
+}
+
+function renderStudentsTable(students) {
+    const tbody = document.getElementById('studentsTableBody');
+    if (!tbody) return;
+    
+    if (students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No students found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = students.map(s => `
+        <tr>
+            <td>#${s.admission_number}</td>
+            <td>${s.first_name} ${s.last_name}</td>
+            <td>${s.room_number || '-'}</td>
+            <td>${s.email}</td>
+            <td><span class="badge badge-success">${s.status || 'Active'}</span></td>
+            <td>
+                <div class="action-btns">
+                    <button class="action-btn view" title="View" onclick="viewStudent(${s.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="7" r="3"></circle>
+                        </svg>
+                    </button>
+                    <button class="action-btn edit" title="Edit" onclick="editStudent(${s.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <button class="action-btn delete" title="Delete" onclick="deleteStudent(${s.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
 }
 
 async function loadRooms() {
@@ -150,52 +403,71 @@ async function loadRooms() {
         if (!response.ok) throw new Error('Failed to fetch rooms');
         const rooms = await response.json();
         
-        // Store rooms globally for student form dropdown
         roomsData = rooms;
-        
-        const tbody = document.getElementById('roomsTableBody');
-        if (!tbody) return;
-        
-        if (rooms.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No rooms found</td></tr>';
-            return;
-        }
-        
-        const statusMap = {
-            'available': '<span class="badge badge-info">Available</span>',
-            'full': '<span class="badge badge-success">Occupied</span>',
-            'maintenance': '<span class="badge badge-warning">Maintenance</span>'
-        };
-        
-        tbody.innerHTML = rooms.map(r => `
-            <tr>
-                <td>${r.room_number}</td>
-                <td>${r.floor}${getOrdinal(r.floor)} Floor</td>
-                <td>${r.capacity === 1 ? 'Single' : r.capacity === 2 ? 'Double' : 'Triple'}</td>
-                <td>${r.capacity}</td>
-                <td>${r.current_occupancy}</td>
-                <td>${statusMap[r.status] || r.status}</td>
-                <td>
-                    <div class="action-btns">
-                        <button class="action-btn edit" title="Edit" onclick="editRoom(${r.id})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                        </button>
-                        <button class="action-btn delete" title="Delete" onclick="deleteRoom(${r.id})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        renderRoomsTable(rooms);
     } catch (error) {
         console.error('Error loading rooms:', error);
+        const tbody = document.getElementById('roomsTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger-color)">Failed to load rooms</td></tr>';
+        }
     }
+}
+
+function filterRooms() {
+    const floorFilter = document.getElementById('roomFloorFilter').value;
+    const statusFilter = document.getElementById('roomStatusFilter').value;
+    
+    let filtered = roomsData.filter(r => {
+        const matchesFloor = !floorFilter || r.floor === parseInt(floorFilter);
+        const matchesStatus = !statusFilter || r.status === statusFilter;
+        return matchesFloor && matchesStatus;
+    });
+    
+    renderRoomsTable(filtered);
+}
+
+function renderRoomsTable(rooms) {
+    const tbody = document.getElementById('roomsTableBody');
+    if (!tbody) return;
+    
+    if (rooms.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No rooms found</td></tr>';
+        return;
+    }
+    
+    const statusMap = {
+        'available': '<span class="badge badge-info">Available</span>',
+        'full': '<span class="badge badge-success">Occupied</span>',
+        'maintenance': '<span class="badge badge-warning">Maintenance</span>'
+    };
+    
+    tbody.innerHTML = rooms.map(r => `
+        <tr>
+            <td>${r.room_number}</td>
+            <td>${r.floor}${getOrdinal(r.floor)} Floor</td>
+            <td>${r.capacity === 1 ? 'Single' : r.capacity === 2 ? 'Double' : 'Triple'}</td>
+            <td>${r.capacity}</td>
+            <td>${r.current_occupancy}</td>
+            <td>${statusMap[r.status] || r.status}</td>
+            <td>
+                <div class="action-btns">
+                    <button class="action-btn edit" title="Edit" onclick="editRoom(${r.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <button class="action-btn delete" title="Delete" onclick="deleteRoom(${r.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
 }
 
 async function loadComplaints() {
@@ -205,51 +477,69 @@ async function loadComplaints() {
         });
         if (!response.ok) throw new Error('Failed to fetch complaints');
         const complaints = await response.json();
-        
-        const tbody = document.getElementById('complaintsTableBody');
-        if (!tbody) return;
-        
-        if (complaints.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No complaints found</td></tr>';
-            return;
-        }
-        
-        const statusMap = {
-            'pending': '<span class="badge badge-danger">Pending</span>',
-            'in_progress': '<span class="badge badge-warning">In Progress</span>',
-            'resolved': '<span class="badge badge-success">Resolved</span>',
-            'rejected': '<span class="badge badge-secondary">Rejected</span>'
-        };
-        
-        tbody.innerHTML = complaints.map(c => `
-            <tr>
-                <td>#C${c.id}</td>
-                <td>${c.first_name} ${c.last_name}</td>
-                <td>${c.category}</td>
-                <td>${c.description.substring(0, 30)}...</td>
-                <td>${new Date(c.created_at).toLocaleDateString()}</td>
-                <td>${statusMap[c.status]}</td>
-                <td>
-                    <div class="action-btns">
-                        <button class="action-btn view" title="View" onclick="viewComplaint(${c.id})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
-                        <button class="action-btn edit" title="Update" onclick="updateComplaint(${c.id})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        complaintsData = complaints;
+        renderComplaintsTable(complaints);
     } catch (error) {
         console.error('Error loading complaints:', error);
+        const tbody = document.getElementById('complaintsTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger-color)">Failed to load complaints</td></tr>';
+        }
     }
+}
+
+function filterComplaints() {
+    const statusFilter = document.getElementById('complaintStatusFilter').value;
+    
+    let filtered = complaintsData.filter(c => {
+        return !statusFilter || c.status === statusFilter;
+    });
+    
+    renderComplaintsTable(filtered);
+}
+
+function renderComplaintsTable(complaints) {
+    const tbody = document.getElementById('complaintsTableBody');
+    if (!tbody) return;
+    
+    if (complaints.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No complaints found</td></tr>';
+        return;
+    }
+    
+    const statusMap = {
+        'pending': '<span class="badge badge-danger">Pending</span>',
+        'in_progress': '<span class="badge badge-warning">In Progress</span>',
+        'resolved': '<span class="badge badge-success">Resolved</span>',
+        'rejected': '<span class="badge badge-secondary">Rejected</span>'
+    };
+    
+    tbody.innerHTML = complaints.map(c => `
+        <tr>
+            <td>#C${c.id}</td>
+            <td>${c.first_name} ${c.last_name}</td>
+            <td>${c.category}</td>
+            <td>${c.description.substring(0, 30)}...</td>
+            <td>${new Date(c.created_at).toLocaleDateString()}</td>
+            <td>${statusMap[c.status]}</td>
+            <td>
+                <div class="action-btns">
+                    <button class="action-btn view" title="View" onclick="viewComplaint(${c.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                    <button class="action-btn edit" title="Update" onclick="updateComplaint(${c.id})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
 }
 
 async function loadNotices() {
