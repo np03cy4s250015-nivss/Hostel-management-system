@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (themeSelect) {
         themeSelect.addEventListener('change', function() {
             saveTheme(this.value);
-            savePreferencesToBackend({ theme: this.value });
+            savePreferencesToBackend({ theme: this.value, studentView: studentViewMode, roomView: roomViewMode, complaintView: complaintViewMode, paymentView: paymentViewMode });
             showToast('Theme updated!', 'success');
         });
     }
@@ -73,7 +73,8 @@ async function loadAdminData() {
         loadStudents(),
         loadRooms(),
         loadComplaints(),
-        loadNotices()
+        loadNotices(),
+        loadPayments()
     ]);
 }
 
@@ -92,6 +93,22 @@ async function loadStats() {
         if (totalStudentsEl) totalStudentsEl.textContent = stats.totalStudents || 0;
         if (occupiedRoomsEl) occupiedRoomsEl.textContent = stats.occupiedRooms || 0;
         if (pendingComplaintsEl) pendingComplaintsEl.textContent = stats.pendingComplaints || 0;
+
+        // Load payment stats
+        try {
+            const payResp = await fetch(`${DATA_API_BASE_URL.replace('/data', '/payment')}/stats`, {
+                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+            });
+            if (payResp.ok) {
+                const payStats = await payResp.json();
+                const revenueEl = document.querySelector('.stat-card:nth-child(4) .stat-details h3');
+                if (revenueEl) {
+                    revenueEl.textContent = '$' + parseFloat(payStats.monthlyRevenue || 0).toFixed(2);
+                }
+            }
+        } catch (e) {
+            console.error('Error loading payment stats:', e);
+        }
     } catch (error) {
         console.error('Error loading stats:', error);
     }
@@ -136,6 +153,204 @@ function filterStudents() {
         renderStudentsTable(filtered);
     } else {
         renderStudentsCardViewWithData(filtered);
+    }
+}
+
+let paymentsData = [];
+let paymentsFilter = 'all';
+let paymentViewMode = 'table';
+
+async function loadPayments() {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL.replace('/data', '/payment')}/history`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch payments');
+        paymentsData = await response.json();
+        filterPayments(paymentsFilter);
+    } catch (error) {
+        console.error('Error loading payments:', error);
+        const tbody = document.getElementById('paymentsTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--danger-color)">Failed to load payments</td></tr>';
+        }
+    }
+}
+
+function filterPayments(filter) {
+    paymentsFilter = filter;
+
+    const sel = document.getElementById('paymentStatusFilter');
+    if (sel) sel.value = filter;
+
+    const searchQuery = (document.getElementById('paymentSearch').value || '').toLowerCase().trim();
+
+    let filtered = paymentsData;
+
+    if (filter !== 'all') {
+        filtered = filtered.filter(p => p.status === filter);
+    }
+
+    if (searchQuery) {
+        filtered = filtered.filter(p => {
+            const name = `${p.first_name || ''} ${p.last_name || ''} ${p.username || ''}`.toLowerCase();
+            return name.includes(searchQuery);
+        });
+    }
+
+    if (paymentViewMode === 'table') {
+        renderPaymentsTable(filtered);
+    } else {
+        renderPaymentsCards(filtered);
+    }
+}
+
+function renderPaymentsTable(filtered) {
+    const tbody = document.getElementById('paymentsTableBody');
+    if (!tbody) return;
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray-500);padding:20px;">No payments found</td></tr>';
+        return;
+    }
+
+    const statusMap = {
+        'completed': '<span class="badge badge-success">Completed</span>',
+        'pending': '<span class="badge badge-warning">Pending</span>',
+        'failed': '<span class="badge badge-danger">Failed</span>'
+    };
+
+    tbody.innerHTML = filtered.map((p, i) => `
+        <tr>
+            <td>${i + 1}</td>
+            <td>${p.first_name || ''} ${p.last_name || ''} (${p.username || ''})</td>
+            <td>${p.room_number || '-'}</td>
+            <td>$${parseFloat(p.amount).toFixed(2)}</td>
+            <td>${p.paid_month || '-'}</td>
+            <td>${p.payment_method || '-'}</td>
+            <td>${statusMap[p.status] || p.status}</td>
+            <td>${p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '-'}</td>
+            <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="${p.transaction_id || ''}">${p.transaction_id || '-'}</td>
+        </tr>
+    `).join('');
+}
+
+function imageUrl(path) {
+    if (!path) return '';
+    return path.startsWith('http') ? path : `http://127.0.0.1:3000/${path.replace(/^\/+/, '')}`;
+}
+
+function renderPaymentsCards(filtered) {
+    const container = document.getElementById('paymentsCardView');
+    if (!container) return;
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<p style="text-align:center;padding:20px;color:#999;grid-column:1/-1">No payments found</p>';
+        return;
+    }
+
+    const statusMap = {
+        'completed': 'badge badge-success',
+        'pending': 'badge badge-warning',
+        'failed': 'badge badge-danger'
+    };
+
+    container.innerHTML = filtered.map((p, i) => `
+        <div class="management-card">
+            <div class="management-card-top">
+                <span class="management-card-id">#${i + 1}</span>
+                <span class="${statusMap[p.status] || 'badge'}">${p.status}</span>
+            </div>
+            <div class="management-card-body">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    ${p.image_url
+                        ? `<img src="${imageUrl(p.image_url)}" class="management-card-avatar" alt="">`
+                        : `<div class="student-avatar-placeholder">${((p.first_name || '?')[0] + (p.last_name || '?')[0]).toUpperCase()}</div>`
+                    }
+                    <div>
+                        <div class="management-card-title" style="margin-bottom:2px;">${p.first_name || ''} ${p.last_name || ''}</div>
+                        <div style="font-size:0.8rem;color:var(--gray-500);">${p.username || ''} · ${p.email || ''}</div>
+                    </div>
+                </div>
+                <div class="management-card-info">
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                        <span class="info-label">Amount</span>
+                        <span style="font-weight:600;color:var(--success-color);">$${parseFloat(p.amount).toFixed(2)}</span>
+                    </div>
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <span class="info-label">Month</span>
+                        <span>${p.paid_month || '-'}</span>
+                    </div>
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                        <span class="info-label">Room</span>
+                        <span>${p.room_number || '-'}</span>
+                    </div>
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></polyline></svg>
+                        <span class="info-label">Method</span>
+                        <span>${p.payment_method || '-'}</span>
+                    </div>
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span class="info-label">Date</span>
+                        <span>${p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '-'}</span>
+                    </div>
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                        <span class="info-label">Ref</span>
+                        <span style="font-size:0.78rem;word-break:break-all;">${p.transaction_id ? p.transaction_id.substring(0, 24) + (p.transaction_id.length > 24 ? '...' : '') : '-'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function setPaymentView(view) {
+    paymentViewMode = view;
+
+    document.querySelectorAll('#payments .view-toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === view);
+    });
+
+    document.getElementById('paymentsTableView').style.display = view === 'table' ? 'block' : 'none';
+    document.getElementById('paymentsCardView').style.display = view === 'card' ? 'grid' : 'none';
+
+    savePreferencesToBackend({
+        theme: getCurrentTheme(),
+        studentView: studentViewMode,
+        roomView: roomViewMode,
+        complaintView: complaintViewMode,
+        paymentView: view
+    });
+
+    filterPayments(paymentsFilter);
+}
+
+async function markPaymentCompleted(paymentId) {
+    if (!confirm('Mark this payment as completed? This is for testing purposes.')) return;
+
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL.replace('/data', '/payment')}/mark-completed`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ paymentId, transactionRef: 'manual-' + Date.now() })
+        });
+
+        if (!response.ok) throw new Error('Failed to update payment');
+
+        showToast('Payment marked as completed!', 'success');
+        loadPayments();
+        loadStats();
+    } catch (error) {
+        console.error('Error marking payment:', error);
+        showToast('Failed to update payment', 'error');
     }
 }
 
@@ -284,10 +499,10 @@ function renderComplaintsCardViewWithData(complaints) {
         'rejected': { class: 'badge-secondary', label: 'Rejected' }
     };
     
-    container.innerHTML = complaints.map(c => `
+    container.innerHTML = complaints.map((c, i) => `
         <div class="management-card">
             <div class="management-card-top">
-                <span class="management-card-id">#C${c.id}</span>
+                <span class="management-card-id">#${i + 1}</span>
                 <span class="badge ${statusMap[c.status].class}">${statusMap[c.status].label}</span>
             </div>
             <div class="management-card-body">
@@ -350,7 +565,7 @@ function setStudentView(view) {
         btn.classList.toggle('active', btn.dataset.view === view);
     });
     filterStudents();
-    savePreferencesToBackend({ studentView: view, roomView: roomViewMode, complaintView: complaintViewMode, theme: getCurrentTheme() });
+    savePreferencesToBackend({ studentView: view, roomView: roomViewMode, complaintView: complaintViewMode, paymentView: paymentViewMode, theme: getCurrentTheme() });
 }
 
 function setRoomView(view) {
@@ -361,7 +576,7 @@ function setRoomView(view) {
         btn.classList.toggle('active', btn.dataset.view === view);
     });
     filterRooms();
-    savePreferencesToBackend({ studentView: studentViewMode, roomView: view, complaintView: complaintViewMode, theme: getCurrentTheme() });
+    savePreferencesToBackend({ studentView: studentViewMode, roomView: view, complaintView: complaintViewMode, paymentView: paymentViewMode, theme: getCurrentTheme() });
 }
 
 function setComplaintView(view) {
@@ -372,7 +587,7 @@ function setComplaintView(view) {
         btn.classList.toggle('active', btn.dataset.view === view);
     });
     filterComplaints();
-    savePreferencesToBackend({ studentView: studentViewMode, roomView: roomViewMode, complaintView: view, theme: getCurrentTheme() });
+    savePreferencesToBackend({ studentView: studentViewMode, roomView: roomViewMode, complaintView: view, paymentView: paymentViewMode, theme: getCurrentTheme() });
 }
 
 function renderStudentsTable(students) {
@@ -514,9 +729,9 @@ function renderComplaintsTable(complaints) {
         'rejected': '<span class="badge badge-secondary">Rejected</span>'
     };
     
-    tbody.innerHTML = complaints.map(c => `
+    tbody.innerHTML = complaints.map((c, i) => `
         <tr>
-            <td>#C${c.id}</td>
+            <td>${i + 1}</td>
             <td>${c.first_name} ${c.last_name}</td>
             <td>${c.category}</td>
             <td>${c.description.substring(0, 30)}...</td>
@@ -605,6 +820,7 @@ async function loadPreferences() {
         }
         if (prefs.studentView) studentViewMode = prefs.studentView;
         if (prefs.roomView) roomViewMode = prefs.roomView;
+        if (prefs.paymentView) paymentViewMode = prefs.paymentView;
         if (prefs.complaintView) complaintViewMode = prefs.complaintView;
         
         applyViewModes();
@@ -624,6 +840,12 @@ function applyViewModes() {
     document.getElementById('roomsCardView').style.display = roomViewMode === 'card' ? 'grid' : 'none';
     document.querySelectorAll('#rooms .view-toggle-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.view === roomViewMode);
+    });
+
+    document.getElementById('paymentsTableView').style.display = paymentViewMode === 'table' ? 'block' : 'none';
+    document.getElementById('paymentsCardView').style.display = paymentViewMode === 'card' ? 'grid' : 'none';
+    document.querySelectorAll('#payments .view-toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === paymentViewMode);
     });
 
     document.getElementById('complaintsTableView').style.display = complaintViewMode === 'table' ? 'block' : 'none';
@@ -1124,10 +1346,6 @@ async function viewComplaint(complaintId) {
         const content = document.getElementById('viewComplaintContent');
         content.innerHTML = `
             <div class="detail-item">
-                <label>Complaint ID</label>
-                <span>#C${complaint.id}</span>
-            </div>
-            <div class="detail-item">
                 <label>Student Name</label>
                 <span>${complaint.first_name} ${complaint.last_name}</span>
             </div>
@@ -1190,6 +1408,7 @@ function showSection(section) {
     
     const statsGrid = document.querySelector('.stats-grid');
     const noticesSection = document.getElementById('notices');
+    const paymentsSection = document.getElementById('payments');
     const studentsSection = document.getElementById('students');
     const roomsSection = document.getElementById('rooms');
     const complaintsSection = document.getElementById('complaints');
@@ -1199,6 +1418,7 @@ function showSection(section) {
     if (section === 'dashboard') {
         if (statsGrid) statsGrid.style.display = 'grid';
         if (noticesSection) noticesSection.style.display = 'block';
+        if (paymentsSection) paymentsSection.style.display = 'none';
         if (studentsSection) studentsSection.style.display = 'none';
         if (roomsSection) roomsSection.style.display = 'none';
         if (complaintsSection) complaintsSection.style.display = 'none';
@@ -1207,6 +1427,7 @@ function showSection(section) {
     } else {
         if (statsGrid) statsGrid.style.display = 'none';
         if (noticesSection) noticesSection.style.display = 'none';
+        if (paymentsSection) paymentsSection.style.display = 'none';
         if (studentsSection) studentsSection.style.display = 'none';
         if (roomsSection) roomsSection.style.display = 'none';
         if (complaintsSection) complaintsSection.style.display = 'none';
@@ -1219,11 +1440,13 @@ function showSection(section) {
             roomsSection.style.display = 'block';
         } else if (section === 'complaints' && complaintsSection) {
             complaintsSection.style.display = 'block';
+        } else if (section === 'payments' && paymentsSection) {
+            paymentsSection.style.display = 'block';
+            filterPayments('all');
         } else if (section === 'notices' && noticesSection) {
             noticesSection.style.display = 'block';
         } else if (section === 'settings-requests' && settingsRequestsSection) {
             settingsRequestsSection.style.display = 'block';
-            // Set filter to pending by default and load
             filterRequests('pending');
         } else if (section === 'settings' && settingsSection) {
             settingsSection.style.display = 'block';
@@ -1287,9 +1510,9 @@ function renderSettingsRequests(requests, filter) {
         return;
     }
     
-    tbody.innerHTML = filteredRequests.map(req => `
+    tbody.innerHTML = filteredRequests.map((req, i) => `
         <tr data-request-id="${req.id}">
-            <td>#${req.id}</td>
+            <td>${i + 1}</td>
             <td>
                 <div class="user-info-cell">
                     <div class="user-avatar-small" style="width:28px;height:28px;font-size:0.7rem;background:linear-gradient(135deg,var(--primary-color),var(--secondary-color));display:flex;align-items:center;justify-content:center;border-radius:50%;color:white;font-weight:600;">
@@ -1469,7 +1692,7 @@ function saveAdminSettings() {
     } else {
         // Only theme change
         saveTheme(theme);
-        savePreferencesToBackend({ theme, studentView: studentViewMode, roomView: roomViewMode, complaintView: complaintViewMode });
+        savePreferencesToBackend({ theme, studentView: studentViewMode, roomView: roomViewMode, complaintView: complaintViewMode, paymentView: paymentViewMode });
         showToast('Settings updated successfully!', 'success');
     }
 }
@@ -1501,7 +1724,7 @@ async function saveAdminPassword(currentPassword, newPassword, theme) {
         
         // Save theme preference
         saveTheme(theme);
-        savePreferencesToBackend({ theme, studentView: studentViewMode, roomView: roomViewMode, complaintView: complaintViewMode });
+        savePreferencesToBackend({ theme, studentView: studentViewMode, roomView: roomViewMode, complaintView: complaintViewMode, paymentView: paymentViewMode });
         
         // Clear password fields
         document.getElementById('settingsCurrentPassword').value = '';
@@ -1550,6 +1773,9 @@ async function initAdminNotifications() {
     const stored = localStorage.getItem(getNotificationStorageKey());
     if (stored) {
         adminNotifications = JSON.parse(stored);
+        // Remove any notifications without proper refId (legacy format from before fix)
+        adminNotifications = adminNotifications.filter(n => n.refId);
+        localStorage.setItem(getNotificationStorageKey(), JSON.stringify(adminNotifications));
     }
     renderNotifications();
     updateNotificationBadge();
@@ -1569,12 +1795,21 @@ async function checkForNewNotifications() {
         
         const apiNotifications = await response.json();
         
-        // Get existing notification IDs from local storage
-        const existingIds = adminNotifications.map(n => n.id);
+        // Dedup by type+refId (more reliable than API id which gets overwritten)
+        const existingKeys = adminNotifications.map(n => `${n.type}_${n.refId}`);
+        
+        // Check if there are new payment notifications - refresh payments + stats
+        const paymentNotifs = apiNotifications.filter(n => n.type === 'payment');
+        const hasNewPayment = paymentNotifs.some(n => !existingKeys.includes(`payment_${n.refId}`));
+        if (hasNewPayment) {
+            loadPayments();
+            loadStats();
+        }
         
         // Add only new notifications from API
         apiNotifications.forEach(n => {
-            if (!existingIds.includes(n.id)) {
+            const key = `${n.type}_${n.refId}`;
+            if (!existingKeys.includes(key)) {
                 addNotification({
                     type: n.type,
                     title: n.title,
@@ -1600,7 +1835,7 @@ async function checkForNewNotifications() {
 }
 
 function addNotification(notification) {
-    notification.id = Date.now();
+    if (!notification.id) notification.id = Date.now();
     notification.timestamp = new Date().toISOString();
     notification.read = false;
     
@@ -1619,6 +1854,8 @@ function addNotification(notification) {
         showToast('New complaint received!', 'warning');
     } else if (notification.type === 'request') {
         showToast('New approval request!', 'info');
+    } else if (notification.type === 'payment') {
+        showToast(`Payment: ${notification.message}`, 'success');
     }
 }
 
@@ -1687,6 +1924,7 @@ function getNotificationIconClass(type) {
         'complaint': 'complaint',
         'request': 'request',
         'notice': 'notice',
+        'payment': 'payment',
         'request-approved': 'request-approved',
         'request-rejected': 'request-rejected',
         'complaint-resolved': 'complaint-resolved',
@@ -1703,7 +1941,8 @@ function getNotificationIcon(type) {
         'request-approved': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
         'request-rejected': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
         'complaint-resolved': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
-        'complaint-progress': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>'
+        'complaint-progress': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+        'payment': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>'
     };
     return icons[type] || icons.notice;
 }
@@ -1717,6 +1956,8 @@ function handleNotificationClick(type, refId) {
         viewComplaint(refId);
     } else if (type === 'request') {
         showSection('settings-requests');
+    } else if (type === 'payment') {
+        showSection('payments');
     }
 }
 

@@ -1941,7 +1941,7 @@ table tbody tr:hover {
     padding: 8px 16px;
     border: 1.5px solid var(--gray-300);
     border-radius: var(--border-radius);
-    background: white;
+    background: var(--gray-200);
     color: var(--gray-600);
     font-size: 0.85rem;
     font-weight: 500;
@@ -2761,8 +2761,13 @@ table tbody tr:hover {
 }
 
 .notification-icon.complaint-progress {
-    background: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--warning-color);
+}
+
+.notification-icon.payment {
+    background: rgba(52, 211, 153, 0.15);
+    color: var(--success-color);
 }
 
 .notification-content {
@@ -2906,5 +2911,40 @@ table tbody tr:hover {
     color: var(--gray-500);
     font-weight: 600;
     font-size: 0.85rem;
+}
+
+/* ============================================
+   Payment Status Card
+   ============================================ */
+
+.payment-status-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: var(--gray-100);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.test-creds-note {
+    margin-top: 10px;
+    padding: 10px 15px;
+    background: #fff3cd;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #856404;
+}
+
+.payment-summary {
+    margin-top: 15px;
+    padding: 15px;
+    background: var(--gray-100);
+    border-radius: 8px;
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
 }
 

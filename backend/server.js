@@ -17,6 +17,7 @@ app.use('/users', express.static(path.join(__dirname, 'users')));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/data', require('./routes/data'));
+app.use('/api/payment', require('./routes/payment'));
 app.use('/api', require('./routes'));
 
 app.get('/', (req, res) => {

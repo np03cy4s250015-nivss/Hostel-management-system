@@ -111,6 +111,22 @@ INSERT INTO rooms (room_number, floor, capacity, status) VALUES
 ('307', 3, 2, 'available'), ('308', 3, 2, 'available'), ('309', 3, 2, 'available'),
 ('310', 3, 2, 'available');
 
+-- Payments table (for tracking monthly fee payments)
+CREATE TABLE IF NOT EXISTS payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    payment_method VARCHAR(50) DEFAULT 'esewa',
+    transaction_id VARCHAR(255) DEFAULT NULL,
+    status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
+    paid_month VARCHAR(7) NOT NULL,
+    paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    INDEX idx_student_id (student_id),
+    INDEX idx_paid_month (paid_month),
+    INDEX idx_status (status)
+);
+
 -- Default admin user (password: admin123)
 INSERT INTO users (username, password, role, first_name, last_name, email, phone) 
 VALUES ('admin', '$2b$10$0McFV9JvPsbarUbjzB9Tf.J.bJrnijJXnW9dn5SyEU6oJnZ97n5Ge', 'admin', 'Admin', 'Warden', 'admin@hms.com', '1234567890');

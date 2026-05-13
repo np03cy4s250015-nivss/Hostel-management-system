@@ -54,7 +54,7 @@ function showSection(section) {
         const secSection = sec.getAttribute('data-section');
         
         if (section === 'dashboard') {
-            // On dashboard, show complaints and notices, hide profile and settings
+            // On dashboard, show complaints, payments and notices, hide profile and settings
             if (secSection === 'profile' || secSection === 'settings') {
                 sec.style.display = 'none';
             } else {
@@ -67,6 +67,10 @@ function showSection(section) {
                 // Load settings when settings section is shown
                 if (section === 'settings') {
                     loadUserSettings();
+                }
+                if (section === 'payments') {
+                    loadUserPaymentStatus();
+                    loadUserPaymentHistory();
                 }
             } else {
                 sec.style.display = 'none';
@@ -120,7 +124,8 @@ async function loadUserData() {
     await Promise.all([
         loadUserProfile(),
         loadUserComplaints(),
-        loadNotices()
+        loadNotices(),
+        loadUserPaymentStatus()
     ]);
 }
 
@@ -206,9 +211,9 @@ async function loadUserComplaints() {
             'resolved': '<span class="badge badge-success">Resolved</span>'
         };
         
-        tbody.innerHTML = complaints.map(c => `
+        tbody.innerHTML = complaints.map((c, i) => `
             <tr>
-                <td>#C${c.id}</td>
+                <td>${i + 1}</td>
                 <td>${c.category}</td>
                 <td>${c.description.substring(0, 40)}...</td>
                 <td>${new Date(c.created_at).toLocaleDateString()}</td>
@@ -303,9 +308,311 @@ async function submitComplaint() {
     }
 }
 
-function makePayment() {
-    showToast('Payment processed successfully!', 'success');
+// ============================================
+// Payment System (eSewa Integration)
+// ============================================
+
+const PAYMENT_API_BASE_URL = DATA_API_BASE_URL.replace('/data', '/payment');
+
+async function loadUserPaymentStatus() {
+    try {
+        const response = await fetch(`${PAYMENT_API_BASE_URL}/my-status`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch payment status');
+        const data = await response.json();
+
+        const monthEl = document.getElementById('paymentMonth');
+        const amountEl = document.getElementById('paymentAmount');
+        const statusBadge = document.getElementById('paymentStatusBadge');
+        const payBtn = document.getElementById('payNowBtn');
+        const simBtn = document.getElementById('simulatePayBtn');
+        const credsNote = document.getElementById('testCredsNote');
+        const feeStat = document.getElementById('feeStatusStat');
+        const totalCountEl = document.getElementById('totalPaymentsCount');
+        const totalAmtEl = document.getElementById('totalAmountPaid');
+
+        if (monthEl) monthEl.textContent = data.month || '-';
+        if (amountEl) amountEl.textContent = data.amount ? '$' + parseFloat(data.amount).toFixed(2) : '$0.00';
+        if (totalCountEl) totalCountEl.textContent = data.totalPayments || 0;
+        if (totalAmtEl) totalAmtEl.textContent = data.totalAmount ? '$' + parseFloat(data.totalAmount).toFixed(2) : '$0.00';
+
+        if (data.status === 'paid') {
+            if (statusBadge) {
+                statusBadge.textContent = 'Paid';
+                statusBadge.className = 'badge badge-success';
+            }
+            if (payBtn) payBtn.style.display = 'none';
+            if (simBtn) simBtn.style.display = 'none';
+            if (credsNote) credsNote.style.display = 'none';
+            if (feeStat) {
+                feeStat.textContent = 'Paid';
+                feeStat.style.color = 'var(--success-color)';
+            }
+        } else if (data.status === 'pending') {
+            if (statusBadge) {
+                statusBadge.textContent = 'Pending';
+                statusBadge.className = 'badge badge-warning';
+            }
+            if (payBtn) {
+                payBtn.style.display = 'inline-flex';
+                payBtn.disabled = false;
+                payBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg> Retry Payment`;
+            }
+            if (simBtn) simBtn.style.display = 'inline-flex';
+            if (credsNote) credsNote.style.display = 'block';
+            if (feeStat) {
+                feeStat.textContent = 'Pending';
+                feeStat.style.color = 'var(--warning-color)';
+            }
+        } else {
+            if (statusBadge) {
+                statusBadge.textContent = 'Due';
+                statusBadge.className = 'badge badge-danger';
+            }
+            if (payBtn) {
+                payBtn.style.display = 'inline-flex';
+                payBtn.disabled = false;
+                payBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg> Pay Now with eSewa`;
+            }
+            if (simBtn) simBtn.style.display = 'inline-flex';
+            if (credsNote) credsNote.style.display = 'block';
+            if (feeStat) {
+                feeStat.textContent = 'Due';
+                feeStat.style.color = 'var(--danger-color)';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading payment status:', error);
+    }
 }
+
+async function loadUserPaymentHistory() {
+    try {
+        const response = await fetch(`${PAYMENT_API_BASE_URL}/history`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch payment history');
+        const payments = await response.json();
+
+        const tbody = document.getElementById('userPaymentsTableBody');
+        if (!tbody) return;
+
+        if (payments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No payment history found</td></tr>';
+            return;
+        }
+
+        const statusMap = {
+            'completed': '<span class="badge badge-success">Completed</span>',
+            'pending': '<span class="badge badge-warning">Pending</span>',
+            'failed': '<span class="badge badge-danger">Failed</span>'
+        };
+
+        tbody.innerHTML = payments.map((p, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td>$${parseFloat(p.amount).toFixed(2)}</td>
+                <td>${p.paid_month || '-'}</td>
+                <td>${p.payment_method || '-'}</td>
+                <td>${statusMap[p.status] || p.status}</td>
+                <td>${p.paid_at ? new Date(p.paid_at).toLocaleDateString() : '-'}</td>
+                <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;" title="${p.transaction_id || ''}">${p.transaction_id ? p.transaction_id.substring(0, 15) + '...' : '-'}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading payment history:', error);
+        const tbody = document.getElementById('userPaymentsTableBody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Failed to load history</td></tr>';
+    }
+}
+
+async function initiatePayment() {
+    const studentId = await getUserStudentId();
+    if (!studentId) {
+        showToast('Student record not found', 'error');
+        return;
+    }
+
+    const response = await fetch(`${DATA_API_BASE_URL}/my-profile`, {
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+    });
+    if (!response.ok) {
+        showToast('Failed to load profile', 'error');
+        return;
+    }
+    const profile = await response.json();
+    const amount = profile.price;
+    if (!amount || amount <= 0) {
+        showToast('No monthly fee amount set. Contact admin.', 'error');
+        return;
+    }
+
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    showToast('Initiating payment with eSewa...', 'info');
+
+    try {
+        const initResponse = await fetch(`${PAYMENT_API_BASE_URL}/initiate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ studentId, amount, month })
+        });
+
+        if (!initResponse.ok) {
+            const err = await initResponse.json();
+            throw new Error(err.error || 'Failed to initiate payment');
+        }
+
+        const paymentData = await initResponse.json();
+
+        // Create and submit eSewa v2 form in new tab
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = paymentData.esewaUrl;
+        form.target = '_blank';
+        form.style.display = 'none';
+
+        const params = paymentData.params;
+        Object.keys(params).forEach(key => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = params[key];
+            form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        showToast('Redirecting to eSewa...', 'info');
+
+        localStorage.setItem('hms_pending_payment', JSON.stringify({
+            transactionUuid: paymentData.transactionUuid,
+            paymentId: paymentData.paymentId,
+            amount: amount,
+            month: month
+        }));
+
+        form.submit();
+    } catch (error) {
+        console.error('Payment initiation error:', error);
+        showToast(error.message || 'Failed to initiate payment', 'error');
+    }
+}
+
+async function getUserStudentId() {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/students`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) return null;
+        const students = await response.json();
+        const user = getCurrentUser();
+        const student = students.find(s => s.email === user.email);
+        return student ? student.id : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+// Check for payment return from eSewa (redirected via backend)
+function checkPaymentReturn() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const transactionUuid = urlParams.get('transaction_uuid');
+    const refId = urlParams.get('refId');
+    const paymentResult = urlParams.get('payment');
+    const reason = urlParams.get('reason');
+
+    if (paymentResult === 'success' && transactionUuid) {
+        verifyPayment(transactionUuid, refId);
+    } else if (paymentResult === 'failed') {
+        const msg = reason ? `Payment failed: ${reason.replace('_', ' ')}` : 'Payment was cancelled or failed';
+        showToast(msg, 'error');
+        localStorage.removeItem('hms_pending_payment');
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    }
+}
+
+async function verifyPayment(transactionUuid, refId) {
+    showToast('Verifying payment with eSewa...', 'info');
+
+    try {
+        const response = await fetch(`${PAYMENT_API_BASE_URL}/verify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                transactionUuid: transactionUuid,
+                refId: refId || undefined
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Verification failed');
+        }
+
+        const data = await response.json();
+        showToast('Payment successful! Thank you.', 'success');
+        localStorage.removeItem('hms_pending_payment');
+
+        loadUserPaymentStatus();
+        loadUserPaymentHistory();
+
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    } catch (error) {
+        console.error('Payment verification error:', error);
+        showToast(error.message || 'Payment verification failed. Contact admin.', 'error');
+        localStorage.removeItem('hms_pending_payment');
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    }
+}
+
+async function simulatePayment() {
+    if (!confirm('This will mark the current month as paid without real payment. Test only?')) return;
+
+    const studentId = await getUserStudentId();
+    if (!studentId) {
+        showToast('Student record not found', 'error');
+        return;
+    }
+
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    try {
+        const response = await fetch(`${PAYMENT_API_BASE_URL}/simulate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ studentId, month })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Simulation failed');
+        }
+
+        showToast('Payment marked as paid (test mode)!', 'success');
+        loadUserPaymentStatus();
+        loadUserPaymentHistory();
+    } catch (error) {
+        console.error('Simulate payment error:', error);
+        showToast(error.message || 'Failed to simulate payment', 'error');
+    }
+}
+
+// Run payment return check on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkPaymentReturn();
+});
 
 function viewNotice(id) {
     console.log('Viewing notice:', id);

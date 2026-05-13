@@ -737,6 +737,30 @@ router.get('/notifications', async (req, res) => {
                     status: r.status
                 });
             });
+
+            // Get recent completed payments
+            const [payments] = await db.execute(`
+                SELECT p.id, p.amount, p.paid_month, p.paid_at,
+                       u.first_name, u.last_name, u.username
+                FROM payments p
+                JOIN students s ON p.student_id = s.id
+                JOIN users u ON s.user_id = u.id
+                WHERE p.status = 'completed' AND p.paid_at >= NOW() - INTERVAL 24 HOUR
+                ORDER BY p.paid_at DESC
+                LIMIT 10
+            `);
+
+            payments.forEach(p => {
+                notifications.push({
+                    id: `payment_${p.id}`,
+                    type: 'payment',
+                    title: 'Payment Received',
+                    message: `${p.first_name} ${p.last_name} paid $${parseFloat(p.amount).toFixed(2)} for ${p.paid_month}`,
+                    refId: p.id,
+                    timestamp: p.paid_at,
+                    status: 'completed'
+                });
+            });
         } else if (role === 'student') {
             // Get complaints for this student
             const [complaints] = await db.execute(`

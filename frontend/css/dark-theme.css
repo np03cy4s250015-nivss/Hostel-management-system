@@ -741,3 +741,26 @@
 [data-theme="dark"] input[type="range"] {
     accent-color: var(--primary-color);
 }
+
+/* Payment Status Card */
+[data-theme="dark"] .payment-status-card {
+    background: var(--gray-200);
+}
+
+/* Test Credentials Note */
+[data-theme="dark"] .test-creds-note {
+    background: rgba(251, 191, 36, 0.12);
+    color: var(--warning-color);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+/* Payment Summary */
+[data-theme="dark"] .payment-summary {
+    background: var(--gray-200);
+}
+
+/* Table cells in dark mode */
+[data-theme="dark"] td code {
+    background: var(--gray-300);
+    color: var(--gray-700);
+}
