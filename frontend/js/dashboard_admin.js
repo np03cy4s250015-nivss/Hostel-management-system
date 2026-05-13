@@ -3,15 +3,20 @@
 // ============================================
 
 const DATA_API_BASE_URL = 'http://127.0.0.1:3000/api/data';
+const UPLOAD_BASE_URL = DATA_API_BASE_URL.replace('/api/data', '');
+
+function imageUrl(url) {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return UPLOAD_BASE_URL + url;
+}
 let roomsData = []; // Store rooms data for dropdown
 let studentsData = []; // Store students data for filtering
 let complaintsData = []; // Store complaints data for filtering
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     initDashboard();
-    
-    // Initialize theme
-    initTheme();
+    await loadPreferences();
     
     // Setup floor change listener for room dropdown
     const floorSelect = document.getElementById('studentFloor');
@@ -29,11 +34,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (themeSelect) {
         themeSelect.addEventListener('change', function() {
             saveTheme(this.value);
+            savePreferencesToBackend({ theme: this.value });
             showToast('Theme updated!', 'success');
         });
     }
     
-    loadAdminData();
+    await loadAdminData();
     const hash = window.location.hash.slice(1) || 'dashboard';
     showSection(hash);
 });
@@ -99,7 +105,7 @@ async function loadStudents() {
         if (!response.ok) throw new Error('Failed to fetch students');
         const students = await response.json();
         studentsData = students;
-        renderStudentsTable(students);
+        filterStudents();
     } catch (error) {
         console.error('Error loading students:', error);
         const tbody = document.getElementById('studentsTableBody');
@@ -179,17 +185,30 @@ function renderStudentsCardViewWithData(students) {
                 <span class="badge badge-success">${s.status || 'Active'}</span>
             </div>
             <div class="management-card-body">
-                <div class="management-card-title">${s.first_name} ${s.last_name}</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    ${s.image_url
+                        ? `<img src="${imageUrl(s.image_url)}" class="management-card-avatar" alt="">`
+                        : `<div class="student-avatar-placeholder">${(s.first_name[0] + s.last_name[0]).toUpperCase()}</div>`
+                    }
+                    <div>
+                        <div class="management-card-title" style="margin-bottom:2px;">${s.first_name} ${s.last_name}</div>
+                    </div>
+                </div>
                 <div class="management-card-info">
+                    <div class="info-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        <span class="info-label">Email</span>
+                        <span>${s.email}</span>
+                    </div>
                     <div class="info-row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
                         <span class="info-label">Room</span>
                         <span>${s.room_number || '-'}</span>
                     </div>
                     <div class="info-row">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                        <span class="info-label">Email</span>
-                        <span>${s.email}</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span class="info-label">Price</span>
+                        <span>${s.price ? '$' + parseFloat(s.price).toFixed(2) : '-'}</span>
                     </div>
                 </div>
             </div>
@@ -331,6 +350,7 @@ function setStudentView(view) {
         btn.classList.toggle('active', btn.dataset.view === view);
     });
     filterStudents();
+    savePreferencesToBackend({ studentView: view, roomView: roomViewMode, complaintView: complaintViewMode, theme: getCurrentTheme() });
 }
 
 function setRoomView(view) {
@@ -341,6 +361,7 @@ function setRoomView(view) {
         btn.classList.toggle('active', btn.dataset.view === view);
     });
     filterRooms();
+    savePreferencesToBackend({ studentView: studentViewMode, roomView: view, complaintView: complaintViewMode, theme: getCurrentTheme() });
 }
 
 function setComplaintView(view) {
@@ -351,6 +372,7 @@ function setComplaintView(view) {
         btn.classList.toggle('active', btn.dataset.view === view);
     });
     filterComplaints();
+    savePreferencesToBackend({ studentView: studentViewMode, roomView: roomViewMode, complaintView: view, theme: getCurrentTheme() });
 }
 
 function renderStudentsTable(students) {
@@ -358,16 +380,17 @@ function renderStudentsTable(students) {
     if (!tbody) return;
     
     if (students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No students found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No students found</td></tr>';
         return;
     }
     
     tbody.innerHTML = students.map(s => `
         <tr>
             <td>#${s.admission_number}</td>
-            <td>${s.first_name} ${s.last_name}</td>
+            <td><div style="display:flex;align-items:center;gap:8px;">${s.image_url ? `<img src="${imageUrl(s.image_url)}" class="student-avatar-sm" alt="">` : `<div class="student-avatar-placeholder" style="width:32px;height:32px;font-size:0.75rem;">${(s.first_name[0] + s.last_name[0]).toUpperCase()}</div>`}<span>${s.first_name} ${s.last_name}</span></div></td>
             <td>${s.room_number || '-'}</td>
             <td>${s.email}</td>
+            <td>${s.price ? '$' + parseFloat(s.price).toFixed(2) : '-'}</td>
             <td><span class="badge badge-success">${s.status || 'Active'}</span></td>
             <td>
                 <div class="action-btns">
@@ -404,7 +427,7 @@ async function loadRooms() {
         const rooms = await response.json();
         
         roomsData = rooms;
-        renderRoomsTable(rooms);
+        filterRooms();
     } catch (error) {
         console.error('Error loading rooms:', error);
         const tbody = document.getElementById('roomsTableBody');
@@ -412,19 +435,6 @@ async function loadRooms() {
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger-color)">Failed to load rooms</td></tr>';
         }
     }
-}
-
-function filterRooms() {
-    const floorFilter = document.getElementById('roomFloorFilter').value;
-    const statusFilter = document.getElementById('roomStatusFilter').value;
-    
-    let filtered = roomsData.filter(r => {
-        const matchesFloor = !floorFilter || r.floor === parseInt(floorFilter);
-        const matchesStatus = !statusFilter || r.status === statusFilter;
-        return matchesFloor && matchesStatus;
-    });
-    
-    renderRoomsTable(filtered);
 }
 
 function renderRoomsTable(rooms) {
@@ -478,7 +488,7 @@ async function loadComplaints() {
         if (!response.ok) throw new Error('Failed to fetch complaints');
         const complaints = await response.json();
         complaintsData = complaints;
-        renderComplaintsTable(complaints);
+        filterComplaints();
     } catch (error) {
         console.error('Error loading complaints:', error);
         const tbody = document.getElementById('complaintsTableBody');
@@ -486,16 +496,6 @@ async function loadComplaints() {
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger-color)">Failed to load complaints</td></tr>';
         }
     }
-}
-
-function filterComplaints() {
-    const statusFilter = document.getElementById('complaintStatusFilter').value;
-    
-    let filtered = complaintsData.filter(c => {
-        return !statusFilter || c.status === statusFilter;
-    });
-    
-    renderComplaintsTable(filtered);
 }
 
 function renderComplaintsTable(complaints) {
@@ -592,14 +592,114 @@ function getOrdinal(n) {
     return s[(v - 20) % 10] || s[v] || s[0];
 }
 
+async function loadPreferences() {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/my-preferences`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) return;
+        const prefs = await response.json();
+        
+        if (prefs.theme) {
+            saveTheme(prefs.theme);
+        }
+        if (prefs.studentView) studentViewMode = prefs.studentView;
+        if (prefs.roomView) roomViewMode = prefs.roomView;
+        if (prefs.complaintView) complaintViewMode = prefs.complaintView;
+        
+        applyViewModes();
+    } catch (e) {
+        // Preferences not critical
+    }
+}
+
+function applyViewModes() {
+    document.getElementById('studentsTableView').style.display = studentViewMode === 'table' ? 'block' : 'none';
+    document.getElementById('studentsCardView').style.display = studentViewMode === 'card' ? 'grid' : 'none';
+    document.querySelectorAll('#students .view-toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === studentViewMode);
+    });
+
+    document.getElementById('roomsTableView').style.display = roomViewMode === 'table' ? 'block' : 'none';
+    document.getElementById('roomsCardView').style.display = roomViewMode === 'card' ? 'grid' : 'none';
+    document.querySelectorAll('#rooms .view-toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === roomViewMode);
+    });
+
+    document.getElementById('complaintsTableView').style.display = complaintViewMode === 'table' ? 'block' : 'none';
+    document.getElementById('complaintsCardView').style.display = complaintViewMode === 'card' ? 'grid' : 'none';
+    document.querySelectorAll('#complaints .view-toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === complaintViewMode);
+    });
+}
+
+async function savePreferencesToBackend(preferences) {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/my-preferences`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ preferences })
+        });
+        if (!response.ok) throw new Error('Failed to save');
+    } catch (e) {
+        console.error('Failed to save preferences:', e);
+    }
+}
+
+async function uploadStudentImage(studentId, fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/students/${studentId}/image`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+            body: formData
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            console.warn('Image upload returned', response.status, err.error || '');
+        }
+    } catch (e) {
+        console.error('Image upload failed:', e);
+    }
+}
+
+document.addEventListener('change', function(e) {
+    if (e.target.id === 'studentImage') {
+        const preview = document.getElementById('addStudentImagePreview');
+        preview.innerHTML = '';
+        if (e.target.files[0]) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(e.target.files[0]);
+            preview.appendChild(img);
+        }
+    }
+    if (e.target.id === 'editStudentImage') {
+        const preview = document.getElementById('editStudentImagePreview');
+        preview.innerHTML = '';
+        if (e.target.files[0]) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(e.target.files[0]);
+            preview.appendChild(img);
+        }
+    }
+});
+
 async function addStudent() {
     const name = document.getElementById('studentName').value;
+    const email = document.getElementById('studentEmail').value;
     const phone = document.getElementById('studentPhone').value;
+    const price = document.getElementById('studentPrice').value;
     const roomId = document.getElementById('studentRoom').value;
     const username = document.getElementById('studentUsername').value;
     const password = document.getElementById('studentPassword').value;
     
-    if (!name || !phone || !roomId || !username || !password) {
+    if (!name || !email || !phone || !price || !roomId || !username || !password) {
         showToast('Please fill in all required fields', 'error');
         return;
     }
@@ -620,18 +720,23 @@ async function addStudent() {
                 password,
                 firstName,
                 lastName,
-                email: `${username}@hms.local`, // Auto-generate email from username
+                email,
                 phone,
+                price: price ? parseFloat(price) : null,
                 admissionNumber: 'STU' + Date.now(),
                 roomId: parseInt(roomId)
             })
         });
         
         if (!response.ok) throw new Error('Failed to add student');
+        const result = await response.json();
+        
+        await uploadStudentImage(result.studentId, document.getElementById('studentImage'));
         
         showToast('Student added successfully! Student can now login with provided credentials', 'success');
         closeModal('addStudentModal');
         document.getElementById('addStudentForm').reset();
+        document.getElementById('addStudentImagePreview').innerHTML = '';
         loadStudents();
     } catch (error) {
         console.error('Error adding student:', error);
@@ -844,6 +949,9 @@ async function viewStudent(studentId) {
         
         const content = document.getElementById('viewStudentContent');
         content.innerHTML = `
+            ${student.image_url ? `<div class="detail-item" style="grid-column: span 2; text-align: center;">
+                <img src="${imageUrl(student.image_url)}" class="student-avatar-lg" alt="Student Photo">
+            </div>` : ''}
             <div class="detail-item">
                 <label>Admission Number</label>
                 <span>${student.admission_number}</span>
@@ -869,6 +977,10 @@ async function viewStudent(studentId) {
                 <span>${student.floor ? student.floor + getOrdinal(student.floor) + ' Floor' : 'Not Assigned'}</span>
             </div>
             <div class="detail-item">
+                <label>Monthly Price</label>
+                <span>${student.price ? '$' + parseFloat(student.price).toFixed(2) : '-'}</span>
+            </div>
+            <div class="detail-item">
                 <label>Status</label>
                 <span><span class="badge badge-success">Active</span></span>
             </div>
@@ -890,8 +1002,20 @@ async function editStudent(studentId) {
         
         document.getElementById('editStudentId').value = student.id;
         document.getElementById('editStudentName').value = `${student.first_name} ${student.last_name}`;
+        document.getElementById('editStudentEmail').value = student.email;
         document.getElementById('editStudentPhone').value = student.phone;
-        document.getElementById('editStudentStatus').value = 'active';
+        document.getElementById('editStudentPrice').value = student.price || '';
+        
+        const preview = document.getElementById('editStudentImagePreview');
+        const currentImg = document.getElementById('editStudentCurrentImage');
+        if (student.image_url) {
+            currentImg.src = imageUrl(student.image_url);
+            currentImg.style.display = 'inline-block';
+        } else {
+            currentImg.style.display = 'none';
+        }
+        preview.innerHTML = '';
+        preview.appendChild(currentImg);
         
         const floorSelect = document.getElementById('editStudentFloor');
         const roomSelect = document.getElementById('editStudentRoom');
@@ -930,11 +1054,12 @@ async function editStudent(studentId) {
 async function saveStudent() {
     const studentId = document.getElementById('editStudentId').value;
     const name = document.getElementById('editStudentName').value;
+    const email = document.getElementById('editStudentEmail').value;
     const phone = document.getElementById('editStudentPhone').value;
+    const price = document.getElementById('editStudentPrice').value;
     const roomId = document.getElementById('editStudentRoom').value;
-    const status = document.getElementById('editStudentStatus').value;
     
-    if (!name || !phone) {
+    if (!name || !email || !phone) {
         showToast('Please fill in all required fields', 'error');
         return;
     }
@@ -953,16 +1078,21 @@ async function saveStudent() {
             body: JSON.stringify({
                 firstName,
                 lastName,
+                email,
                 phone,
-                roomId: roomId ? parseInt(roomId) : null,
-                status
+                price: price ? parseFloat(price) : null,
+                roomId: roomId ? parseInt(roomId) : null
             })
         });
         
         if (!response.ok) throw new Error('Failed to update student');
         
+        const preview = document.getElementById('editStudentImagePreview');
+        await uploadStudentImage(studentId, document.getElementById('editStudentImage'));
+        
         showToast('Student updated successfully!', 'success');
         closeModal('editStudentModal');
+        preview.innerHTML = '';
         loadStudents();
         loadStats();
     } catch (error) {
@@ -1306,11 +1436,9 @@ function filterRequests(filter) {
  * Load current admin settings
  */
 function loadAdminSettings() {
-    // Theme preference from localStorage
-    const savedTheme = localStorage.getItem('hms_theme') || 'light';
     const themeSelect = document.getElementById('settingsTheme');
     if (themeSelect) {
-        themeSelect.value = savedTheme;
+        themeSelect.value = getCurrentTheme();
     }
 }
 
@@ -1340,7 +1468,8 @@ function saveAdminSettings() {
         saveAdminPassword(currentPassword, newPassword, theme);
     } else {
         // Only theme change
-        localStorage.setItem('hms_theme', theme);
+        saveTheme(theme);
+        savePreferencesToBackend({ theme, studentView: studentViewMode, roomView: roomViewMode, complaintView: complaintViewMode });
         showToast('Settings updated successfully!', 'success');
     }
 }
@@ -1371,7 +1500,8 @@ async function saveAdminPassword(currentPassword, newPassword, theme) {
         }
         
         // Save theme preference
-        localStorage.setItem('hms_theme', theme);
+        saveTheme(theme);
+        savePreferencesToBackend({ theme, studentView: studentViewMode, roomView: roomViewMode, complaintView: complaintViewMode });
         
         // Clear password fields
         document.getElementById('settingsCurrentPassword').value = '';

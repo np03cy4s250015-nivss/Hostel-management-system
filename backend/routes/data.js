@@ -2,6 +2,28 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
+const UPLOAD_DIR = path.join(__dirname, '..', 'users');
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        cb(null, `student_${req.params.id}_${Date.now()}${ext}`);
+    }
+});
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (/\.(jpg|jpeg|png|gif|webp)$/i.test(path.extname(file.originalname))) return cb(null, true);
+        cb(new Error('Only image files (jpg, jpeg, png, gif, webp) are allowed'));
+    }
+});
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -46,8 +68,8 @@ router.get('/stats', async (req, res) => {
 router.get('/students', async (req, res) => {
     try {
         const [students] = await db.execute(`
-            SELECT s.id, s.admission_number,
-                   u.username, u.first_name, u.last_name, u.email, u.phone,
+            SELECT s.id, s.admission_number, s.price,
+                   u.username, u.first_name, u.last_name, u.email, u.phone, u.image_url,
                    r.room_number, r.floor
             FROM students s
             JOIN users u ON s.user_id = u.id
@@ -64,7 +86,7 @@ router.get('/students', async (req, res) => {
 router.post('/students', async (req, res) => {
     const connection = await db.getConnection();
     try {
-        const { username, password, firstName, lastName, email, phone, admissionNumber, roomId } = req.body;
+        const { username, password, firstName, lastName, email, phone, admissionNumber, roomId, price } = req.body;
 
         const hashedPassword = await require('bcrypt').hash(password, 10);
 
@@ -73,16 +95,18 @@ router.post('/students', async (req, res) => {
             [username, hashedPassword, 'student', firstName, lastName, email, phone]
         );
 
-        await connection.execute(
-            'INSERT INTO students (user_id, admission_number, room_id) VALUES (?, ?, ?)',
-            [userResult.insertId, admissionNumber, roomId || null]
+        const priceValue = price !== undefined && price !== null && price !== '' ? price : null;
+
+        const [studentResult] = await connection.execute(
+            'INSERT INTO students (user_id, admission_number, room_id, price) VALUES (?, ?, ?, ?)',
+            [userResult.insertId, admissionNumber, roomId || null, priceValue]
         );
 
         if (roomId) {
             await connection.execute('UPDATE rooms SET current_occupancy = current_occupancy + 1, status = CASE WHEN current_occupancy + 1 >= capacity THEN \'full\' ELSE \'available\' END WHERE id = ?', [roomId]);
         }
 
-        res.status(201).json({ message: 'Student added successfully' });
+        res.status(201).json({ message: 'Student added successfully', studentId: studentResult.insertId });
     } catch (error) {
         console.error('Add student error:', error);
         res.status(500).json({ error: 'Failed to add student' });
@@ -94,12 +118,17 @@ router.post('/students', async (req, res) => {
 router.delete('/students/:id', async (req, res) => {
     const connection = await db.getConnection();
     try {
-        const [student] = await connection.execute('SELECT user_id, room_id FROM students WHERE id = ?', [req.params.id]);
+        const [student] = await connection.execute('SELECT s.user_id, s.room_id, u.image_url FROM students s JOIN users u ON s.user_id = u.id WHERE s.id = ?', [req.params.id]);
         if (student.length === 0) {
             return res.status(404).json({ error: 'Student not found' });
         }
         
         const roomId = student[0].room_id;
+        
+        if (student[0].image_url) {
+            const filePath = path.join(UPLOAD_DIR, path.basename(student[0].image_url));
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
         
         await connection.execute('DELETE FROM students WHERE id = ?', [req.params.id]);
         await connection.execute('DELETE FROM users WHERE id = ?', [student[0].user_id]);
@@ -120,8 +149,8 @@ router.delete('/students/:id', async (req, res) => {
 router.get('/students/:id', async (req, res) => {
     try {
         const [students] = await db.execute(`
-            SELECT s.id, s.admission_number,
-                   u.username, u.first_name, u.last_name, u.email, u.phone,
+            SELECT s.id, s.admission_number, s.price,
+                   u.username, u.first_name, u.last_name, u.email, u.phone, u.image_url,
                    r.room_number, r.floor, r.capacity, r.status as room_status
             FROM students s
             JOIN users u ON s.user_id = u.id
@@ -139,10 +168,45 @@ router.get('/students/:id', async (req, res) => {
     }
 });
 
+// Upload student image (replaces old one)
+router.post('/students/:id/image', (req, res, next) => {
+    upload.single('image')(req, res, (err) => {
+        if (err) return res.status(400).json({ error: err.message });
+        next();
+    });
+}, async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No image file provided' });
+
+        const [students] = await db.execute('SELECT user_id FROM students WHERE id = ?', [req.params.id]);
+        if (students.length === 0) {
+            fs.unlinkSync(req.file.path);
+            return res.status(404).json({ error: 'Student not found' });
+        }
+
+        const userId = students[0].user_id;
+        const [user] = await db.execute('SELECT image_url FROM users WHERE id = ?', [userId]);
+
+        if (user[0].image_url) {
+            const oldPath = path.join(UPLOAD_DIR, path.basename(user[0].image_url));
+            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        }
+
+        const imageUrl = `${req.protocol}://${req.get('host')}/users/${req.file.filename}`;
+        await db.execute('UPDATE users SET image_url = ? WHERE id = ?', [imageUrl, userId]);
+
+        res.json({ imageUrl, message: 'Image uploaded successfully' });
+    } catch (error) {
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        console.error('Upload image error:', error);
+        res.status(500).json({ error: 'Failed to upload image' });
+    }
+});
+
 router.put('/students/:id', async (req, res) => {
     const connection = await db.getConnection();
     try {
-        const { firstName, lastName, phone, roomId, status } = req.body;
+        const { firstName, lastName, email, phone, price, roomId } = req.body;
         
         const [student] = await connection.execute('SELECT user_id, room_id FROM students WHERE id = ?', [req.params.id]);
         if (student.length === 0) {
@@ -153,8 +217,13 @@ router.put('/students/:id', async (req, res) => {
         const oldRoomId = student[0].room_id;
         
         await connection.execute(
-            'UPDATE users SET first_name = ?, last_name = ?, phone = ? WHERE id = ?',
-            [firstName, lastName, phone, userId]
+            'UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ? WHERE id = ?',
+            [firstName, lastName, email, phone, userId]
+        );
+        
+        await connection.execute(
+            'UPDATE students SET price = ? WHERE id = ?',
+            [price !== undefined && price !== null && price !== '' ? price : null, req.params.id]
         );
         
         if (roomId !== undefined) {
@@ -360,7 +429,7 @@ router.delete('/notices/:id', async (req, res) => {
 router.get('/my-profile', async (req, res) => {
     try {
         const [students] = await db.execute(`
-            SELECT s.*, u.first_name, u.last_name, u.email, u.phone,
+            SELECT s.*, u.first_name, u.last_name, u.email, u.phone, u.image_url,
                    r.room_number, r.floor
             FROM students s
             JOIN users u ON s.user_id = u.id
@@ -376,6 +445,39 @@ router.get('/my-profile', async (req, res) => {
     } catch (error) {
         console.error('Get profile error:', error);
         res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+});
+
+// Get user preferences
+router.get('/my-preferences', async (req, res) => {
+    try {
+        const [users] = await db.execute(
+            'SELECT preferences FROM users WHERE id = ?',
+            [req.user.id]
+        );
+        if (users.length === 0) {
+            return res.json({});
+        }
+        const prefs = users[0].preferences;
+        res.json(typeof prefs === 'string' ? JSON.parse(prefs) : (prefs || {}));
+    } catch (error) {
+        console.error('Get preferences error:', error);
+        res.status(500).json({ error: 'Failed to fetch preferences' });
+    }
+});
+
+// Update user preferences
+router.put('/my-preferences', async (req, res) => {
+    try {
+        const { preferences } = req.body;
+        await db.execute(
+            'UPDATE users SET preferences = ? WHERE id = ?',
+            [JSON.stringify(preferences || {}), req.user.id]
+        );
+        res.json({ message: 'Preferences saved' });
+    } catch (error) {
+        console.error('Save preferences error:', error);
+        res.status(500).json({ error: 'Failed to save preferences' });
     }
 });
 

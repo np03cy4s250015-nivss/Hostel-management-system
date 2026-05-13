@@ -14,7 +14,9 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    phone VARCHAR(20)
+    phone VARCHAR(20),
+    image_url VARCHAR(255) DEFAULT NULL,
+    preferences JSON DEFAULT NULL
 );
 
 -- Rooms table (no blocks - just floors)
@@ -33,6 +35,8 @@ CREATE TABLE IF NOT EXISTS students (
     user_id INT NOT NULL,
     room_id INT DEFAULT NULL,
     admission_number VARCHAR(50) UNIQUE NOT NULL,
+    price DECIMAL(10, 2) DEFAULT NULL,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
 );

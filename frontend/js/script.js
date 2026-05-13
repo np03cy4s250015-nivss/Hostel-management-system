@@ -354,20 +354,10 @@ document.head.appendChild(style);
 
 /**
  * Initialize theme on page load - called from dashboard JS files
+ * Theme is loaded from backend preferences; fall back to light
  */
 function initTheme() {
-    const savedTheme = localStorage.getItem('hms_theme') || 'light';
-    applyTheme(savedTheme);
-    
-    // Listen for system theme changes if in auto mode
-    if (window.matchMedia) {
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            const currentTheme = localStorage.getItem('hms_theme');
-            if (currentTheme === 'auto') {
-                applyTheme('auto');
-            }
-        });
-    }
+    applyTheme('light');
 }
 
 /**
@@ -391,26 +381,18 @@ function applyTheme(theme) {
 }
 
 /**
- * Get current effective theme (resolves 'auto' to actual theme)
+ * Get current effective theme - reads from DOM attribute
  * @returns {string} 'light' or 'dark'
  */
 function getCurrentTheme() {
-    const savedTheme = localStorage.getItem('hms_theme') || 'light';
-    
-    if (savedTheme === 'auto') {
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        return prefersDark ? 'dark' : 'light';
-    }
-    
-    return savedTheme;
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
 }
 
 /**
- * Save theme preference to localStorage
+ * Apply theme to document (previously saved to localStorage, now handled via backend)
  * @param {string} theme - 'light', 'dark', or 'auto'
  */
 function saveTheme(theme) {
-    localStorage.setItem('hms_theme', theme);
     applyTheme(theme);
 }
 

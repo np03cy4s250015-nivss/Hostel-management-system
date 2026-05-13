@@ -4,23 +4,29 @@
 
 // Use existing DATA_API_BASE_URL from script.js
 const DATA_API_BASE_URL = 'http://127.0.0.1:3000/api/data';
+const UPLOAD_BASE_URL = DATA_API_BASE_URL.replace('/api/data', '');
 
-document.addEventListener('DOMContentLoaded', function() {
+function imageUrl(url) {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return UPLOAD_BASE_URL + url;
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
     initDashboard();
+    await loadPreferences();
     
-    // Initialize theme
-    initTheme();
-    
-    // Theme selector change handler - theme changes are immediate (stored in localStorage)
+    // Theme selector change handler - theme changes are immediate
     const themeSelect = document.getElementById('settingsTheme');
     if (themeSelect) {
         themeSelect.addEventListener('change', function() {
             saveTheme(this.value);
+            savePreferencesToBackend({ theme: this.value });
             showToast('Theme updated!', 'success');
         });
     }
     
-    loadUserData();
+    await loadUserData();
     const hash = window.location.hash.slice(1) || 'dashboard';
     showSection(hash);
 });
@@ -75,6 +81,38 @@ function getOrdinal(n) {
     return s[(v - 20) % 10] || s[v] || s[0];
 }
 
+async function loadPreferences() {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/my-preferences`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) return;
+        const prefs = await response.json();
+        
+        if (prefs.theme) {
+            saveTheme(prefs.theme);
+        }
+    } catch (e) {
+        // Preferences not critical
+    }
+}
+
+async function savePreferencesToBackend(preferences) {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/my-preferences`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ preferences })
+        });
+        if (!response.ok) throw new Error('Failed to save');
+    } catch (e) {
+        console.error('Failed to save preferences:', e);
+    }
+}
+
 async function loadUserData() {
     const user = getCurrentUser();
     if (!user) return;
@@ -107,7 +145,6 @@ async function loadUserProfile() {
         // Determine floor: from profile.floor, or fallback to extracting from room_number
         let floor = profile.floor;
         if (floor === undefined && profile.room_number) {
-            // Extract first digit from room number (e.g., "101" -> 1, "204" -> 2)
             const match = String(profile.room_number).match(/^(\d)/);
             if (match) floor = parseInt(match[1]);
         }
@@ -115,13 +152,26 @@ async function loadUserProfile() {
         // Populate floor stat card
         document.getElementById('floorStat').textContent = floor ? `${floor}${getOrdinal(floor)} Floor` : '-';
         
+        // Profile image
+        const container = document.getElementById('profileImageContainer');
+        if (profile.image_url) {
+            container.innerHTML = `<img src="${imageUrl(profile.image_url)}" class="student-avatar-lg" alt="Profile Photo">`;
+        } else {
+            const initials = ((profile.first_name || '')[0] + (profile.last_name || '')[0]).toUpperCase() || '?';
+            container.innerHTML = `<div class="student-avatar-lg" style="display:flex;align-items:center;justify-content:center;background:var(--gray-200);color:var(--gray-500);font-weight:700;font-size:1.5rem;">${initials}</div>`;
+        }
+        
+        // Profile header
+        document.getElementById('profileName').textContent = `${profile.first_name} ${profile.last_name}`;
+        document.getElementById('profileAdmission').textContent = profile.admission_number || '-';
+        
         // Populate profile fields
-        document.getElementById('admissionNumber').textContent = profile.admission_number || '-';
-        document.getElementById('fullName').textContent = `${profile.first_name} ${profile.last_name}`;
         document.getElementById('email').textContent = profile.email || '-';
         document.getElementById('phone').textContent = profile.phone || '-';
         document.getElementById('roomNumberDisplay').textContent = profile.room_number || 'Not Assigned';
         document.getElementById('floorNum').textContent = floor ? `${floor}${getOrdinal(floor)} Floor` : '-';
+        document.getElementById('profilePrice').textContent = profile.price ? '$' + parseFloat(profile.price).toFixed(2) : '-';
+        document.getElementById('profileJoinedDate').textContent = profile.joined_at ? new Date(profile.joined_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
     } catch (error) {
         console.error('Error loading profile:', error);
     }
@@ -269,11 +319,9 @@ function viewNotice(id) {
  * Load current user settings
  */
 function loadUserSettings() {
-    // Theme preference from localStorage
-    const savedTheme = localStorage.getItem('hms_theme') || 'light';
     const themeSelect = document.getElementById('settingsTheme');
     if (themeSelect) {
-        themeSelect.value = savedTheme;
+        themeSelect.value = getCurrentTheme();
     }
 }
 

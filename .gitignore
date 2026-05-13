@@ -22,3 +22,7 @@ Thumbs.db
 # System files
 *.tmp
 *.temp
+
+# User uploaded images (keep the folder, ignore files)
+backend/users/*
+!backend/users/.gitkeep
