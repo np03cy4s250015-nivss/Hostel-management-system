@@ -761,6 +761,18 @@ async function checkForUserNotifications() {
             }
         });
         
+        // Remove notifications for notices that no longer exist (deleted by admin)
+        const activeNoticeIds = apiNotifications.filter(n => n.type === 'notice').map(n => n.refId);
+        if (activeNoticeIds.length > 0) {
+            const removedCount = userNotifications.filter(n => n.type === 'notice' && !activeNoticeIds.includes(n.refId)).length;
+            if (removedCount > 0) {
+                userNotifications = userNotifications.filter(n => n.type !== 'notice' || activeNoticeIds.includes(n.refId));
+                localStorage.setItem(getUserNotificationStorageKey(), JSON.stringify(userNotifications));
+                renderUserNotifications();
+                updateUserNotificationBadge();
+            }
+        }
+        
     } catch (error) {
         console.error('Error checking for user notifications:', error);
     }
@@ -793,29 +805,15 @@ function toggleNotificationPopup() {
     const popup = document.getElementById('notificationPopup');
     if (popup) {
         popup.classList.toggle('active');
-        
-        if (popup.classList.contains('active')) {
-            markUserNotificationsAsRead();
-        }
     }
 }
 
-function markUserNotificationsAsRead() {
-    userNotifications.forEach(n => n.read = true);
-    localStorage.setItem(getUserNotificationStorageKey(), JSON.stringify(userNotifications));
-    updateUserNotificationBadge();
-}
-
-function clearAllNotifications(event) {
+function markUserNotificationsAsRead(event) {
     if (event) event.stopPropagation();
-    
-    userNotifications = [];
+    userNotifications.forEach(n => n.read = true);
     localStorage.setItem(getUserNotificationStorageKey(), JSON.stringify(userNotifications));
     renderUserNotifications();
     updateUserNotificationBadge();
-    
-    const popup = document.getElementById('notificationPopup');
-    if (popup) popup.classList.remove('active');
 }
 
 function renderUserNotifications() {
@@ -841,6 +839,7 @@ function renderUserNotifications() {
                 ${getNotificationIcon(n.type)}
             </div>
             <div class="notification-content">
+                <span class="notification-type-label type-${n.type}">${getNotificationTypeLabel(n.type)}</span>
                 <div class="notification-title">${n.title}</div>
                 <div class="notification-message">${n.message}</div>
                 <div class="notification-time">${formatTimeAgo(n.timestamp)}</div>
@@ -873,6 +872,19 @@ function getNotificationIcon(type) {
         'complaint-progress': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>'
     };
     return icons[type] || icons.notice;
+}
+
+function getNotificationTypeLabel(type) {
+    const labels = {
+        'complaint': 'Complaint',
+        'request': 'Request',
+        'notice': 'Notice',
+        'request-approved': 'Approved',
+        'request-rejected': 'Rejected',
+        'complaint-resolved': 'Resolved',
+        'complaint-progress': 'In Progress'
+    };
+    return labels[type] || 'Notice';
 }
 
 function formatTimeAgo(timestamp) {

@@ -1863,29 +1863,15 @@ function toggleNotificationPopup() {
     const popup = document.getElementById('notificationPopup');
     if (popup) {
         popup.classList.toggle('active');
-        
-        if (popup.classList.contains('active')) {
-            markAllAsRead();
-        }
     }
 }
 
-function markAllAsRead() {
-    adminNotifications.forEach(n => n.read = true);
-    localStorage.setItem(getNotificationStorageKey(), JSON.stringify(adminNotifications));
-    updateNotificationBadge();
-}
-
-function clearAllNotifications(event) {
+function markAllAsRead(event) {
     if (event) event.stopPropagation();
-    
-    adminNotifications = [];
+    adminNotifications.forEach(n => n.read = true);
     localStorage.setItem(getNotificationStorageKey(), JSON.stringify(adminNotifications));
     renderNotifications();
     updateNotificationBadge();
-    
-    const popup = document.getElementById('notificationPopup');
-    if (popup) popup.classList.remove('active');
 }
 
 function renderNotifications() {
@@ -1911,6 +1897,7 @@ function renderNotifications() {
                 ${getNotificationIcon(n.type)}
             </div>
             <div class="notification-content">
+                <span class="notification-type-label type-${n.type}">${getNotificationTypeLabel(n.type)}</span>
                 <div class="notification-title">${n.title}</div>
                 <div class="notification-message">${n.message}</div>
                 <div class="notification-time">${formatTimeAgo(n.timestamp)}</div>
@@ -1945,6 +1932,20 @@ function getNotificationIcon(type) {
         'payment': '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>'
     };
     return icons[type] || icons.notice;
+}
+
+function getNotificationTypeLabel(type) {
+    const labels = {
+        'complaint': 'Complaint',
+        'request': 'Request',
+        'notice': 'Notice',
+        'payment': 'Payment',
+        'request-approved': 'Approved',
+        'request-rejected': 'Rejected',
+        'complaint-resolved': 'Resolved',
+        'complaint-progress': 'In Progress'
+    };
+    return labels[type] || 'Notice';
 }
 
 function handleNotificationClick(type, refId) {

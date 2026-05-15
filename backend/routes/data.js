@@ -788,7 +788,6 @@ router.get('/notifications', async (req, res) => {
                 SELECT id, title, content, created_at
                 FROM notices
                 ORDER BY created_at DESC
-                LIMIT 10
             `);
             
             notices.forEach(n => {
