@@ -767,9 +767,13 @@ async function checkForUserNotifications() {
 }
 
 function addUserNotification(notification) {
-    notification.id = Date.now();
-    notification.timestamp = new Date().toISOString();
+    if (!notification.id) notification.id = Date.now();
+    if (!notification.timestamp) notification.timestamp = new Date().toISOString();
     notification.read = false;
+    
+    const existingKeys = userNotifications.map(n => `${n.type}_${n.refId}`);
+    const key = `${notification.type}_${notification.refId}`;
+    if (existingKeys.includes(key)) return;
     
     userNotifications.unshift(notification);
     

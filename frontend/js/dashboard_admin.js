@@ -1836,7 +1836,7 @@ async function checkForNewNotifications() {
 
 function addNotification(notification) {
     if (!notification.id) notification.id = Date.now();
-    notification.timestamp = new Date().toISOString();
+    if (!notification.timestamp) notification.timestamp = new Date().toISOString();
     notification.read = false;
     
     adminNotifications.unshift(notification);
