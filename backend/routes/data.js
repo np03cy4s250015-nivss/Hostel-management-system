@@ -88,6 +88,13 @@ router.post('/students', async (req, res) => {
     try {
         const { username, password, firstName, lastName, email, phone, admissionNumber, roomId, price } = req.body;
 
+        if (roomId) {
+            const [roomCheck] = await connection.execute('SELECT capacity, current_occupancy FROM rooms WHERE id = ?', [roomId]);
+            if (roomCheck.length > 0 && roomCheck[0].current_occupancy >= roomCheck[0].capacity) {
+                return res.status(400).json({ error: 'Room is already at full capacity' });
+            }
+        }
+
         const hashedPassword = await require('bcrypt').hash(password, 10);
 
         const [userResult] = await connection.execute(
@@ -227,6 +234,13 @@ router.put('/students/:id', async (req, res) => {
         );
         
         if (roomId !== undefined) {
+            if (roomId && oldRoomId !== roomId) {
+                const [targetRoom] = await connection.execute('SELECT capacity, current_occupancy FROM rooms WHERE id = ?', [roomId]);
+                if (targetRoom.length > 0 && targetRoom[0].current_occupancy >= targetRoom[0].capacity) {
+                    return res.status(400).json({ error: 'Target room is already at full capacity' });
+                }
+            }
+
             await connection.execute('UPDATE students SET room_id = ? WHERE id = ?', [roomId || null, req.params.id]);
             
             if (oldRoomId && oldRoomId !== roomId) {
@@ -238,7 +252,7 @@ router.put('/students/:id', async (req, res) => {
                 }
             }
             
-            if (roomId) {
+            if (roomId && oldRoomId !== roomId) {
                 const [newRoom] = await connection.execute('SELECT capacity, current_occupancy FROM rooms WHERE id = ?', [roomId]);
                 if (newRoom.length > 0) {
                     const newOccupancy = newRoom[0].current_occupancy + 1;

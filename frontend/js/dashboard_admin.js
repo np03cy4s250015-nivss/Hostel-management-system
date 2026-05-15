@@ -55,8 +55,8 @@ function filterRoomsByFloor(floor, roomSelect) {
         return;
     }
     
-    // Filter rooms by floor and available status
-    const filteredRooms = roomsData.filter(r => r.floor === parseInt(floor) && r.status === 'available');
+    // Filter rooms by floor and actual availability (occupancy < capacity)
+    const filteredRooms = roomsData.filter(r => r.floor === parseInt(floor) && r.current_occupancy < r.capacity && r.status !== 'maintenance');
     
     roomSelect.innerHTML = '<option value="">Select Room</option>' +
         filteredRooms.map(room => 
@@ -950,7 +950,10 @@ async function addStudent() {
             })
         });
         
-        if (!response.ok) throw new Error('Failed to add student');
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Failed to add student');
+        }
         const result = await response.json();
         
         await uploadStudentImage(result.studentId, document.getElementById('studentImage'));
@@ -960,6 +963,7 @@ async function addStudent() {
         document.getElementById('addStudentForm').reset();
         document.getElementById('addStudentImagePreview').innerHTML = '';
         loadStudents();
+        loadRooms();
     } catch (error) {
         console.error('Error adding student:', error);
         showToast('Failed to add student', 'error');
@@ -995,6 +999,7 @@ async function deleteStudent(studentId) {
             
             showToast('Student deleted successfully!', 'success');
             loadStudents();
+            loadRooms();
             loadStats();
         } catch (error) {
             console.error('Error deleting student:', error);
@@ -1307,7 +1312,10 @@ async function saveStudent() {
             })
         });
         
-        if (!response.ok) throw new Error('Failed to update student');
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Failed to update student');
+        }
         
         const preview = document.getElementById('editStudentImagePreview');
         await uploadStudentImage(studentId, document.getElementById('editStudentImage'));
@@ -1316,6 +1324,7 @@ async function saveStudent() {
         closeModal('editStudentModal');
         preview.innerHTML = '';
         loadStudents();
+        loadRooms();
         loadStats();
     } catch (error) {
         console.error('Error saving student:', error);
