@@ -149,7 +149,10 @@
                     <div class="notification-popup" id="notificationPopup">
                         <div class="notification-header">
                             <h3>Notifications</h3>
-                            <button class="clear-all-btn" onclick="markAllAsRead(event)">Mark all as read</button>
+                            <div style="display:flex;gap:12px;">
+                                <button class="clear-all-btn" onclick="markAllAsRead(event)">Mark all as read</button>
+                                <button class="clear-all-btn" onclick="clearAllNotifications(event)" style="color:var(--danger-color);">Clear All</button>
+                            </div>
                         </div>
                         <div class="notification-list" id="notificationList">
                             <div class="notification-empty">
@@ -234,7 +237,7 @@
                             <div class="filter-group">
                                 <input type="text" id="studentSearch" placeholder="Search by name..." class="filter-input" oninput="filterStudents()">
                             </div>
-                            <div class="filter-group">
+                            <div class="filter-group" style="display:none;">
                                 <select id="studentStatusFilter" class="filter-select" onchange="filterStudents()">
                                     <option value="">All Status</option>
                                     <option value="active">Active</option>
@@ -941,7 +944,7 @@
     <div class="modal" id="addNoticeModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Add New Notice</h3>
+                <h3 id="addNoticeModalLabel">Add New Notice</h3>
                 <button class="modal-close" onclick="closeModal('addNoticeModal')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -963,7 +966,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('addNoticeModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="addNotice()">Publish Notice</button>
+                <button class="btn btn-primary" type="submit" form="addNoticeForm">Publish Notice</button>
             </div>
         </div>
     </div>

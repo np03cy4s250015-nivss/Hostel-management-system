@@ -20,6 +20,7 @@ async function handleLogin(e) {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
     const errorMessage = document.getElementById('errorMessage');
+    const loginBtn = document.querySelector('.login-btn');
     
     errorMessage.style.display = 'none';
     errorMessage.textContent = '';
@@ -27,6 +28,11 @@ async function handleLogin(e) {
     if (!username || !password) {
         showError('Please fill in all fields');
         return;
+    }
+    
+    if (loginBtn) {
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Signing in...';
     }
     
     try {
@@ -56,6 +62,8 @@ async function handleLogin(e) {
         
         const rememberMe = document.getElementById('remember')?.checked;
         
+        // NOTE: Token stored in localStorage/sessionStorage — accessible to any JS on the page.
+        // In production, consider HttpOnly cookies to mitigate XSS token theft.
         if (rememberMe) {
             localStorage.setItem('hms_session', JSON.stringify(session));
         } else {
@@ -70,6 +78,11 @@ async function handleLogin(e) {
     } catch (error) {
         console.error('Login error:', error);
         showError('Unable to connect to server. Please try again.');
+    } finally {
+        if (loginBtn) {
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Sign In';
+        }
     }
 }
 
@@ -288,6 +301,14 @@ function openModal(modalId) {
                 roomSelect.innerHTML = '<option value="">Select Room</option>';
             }
         }
+        
+        // Reset edit mode when opening add notice modal
+        if (modalId === 'addNoticeModal') {
+            const form = document.getElementById('addNoticeForm');
+            if (form && !form._editing) {
+                document.getElementById('addNoticeModalLabel').textContent = 'Add New Notice';
+            }
+        }
     }
 }
 
@@ -296,17 +317,31 @@ function closeModal(modalId) {
     if (modal) {
         modal.classList.remove('active');
     }
+    if (modalId === 'addNoticeModal') {
+        const form = document.getElementById('addNoticeForm');
+        if (form && form._editing) {
+            form._editing = null;
+            document.getElementById('addNoticeModalLabel').textContent = 'Add New Notice';
+            form.reset();
+        }
+    }
 }
 
 function closeAllModals() {
     document.querySelectorAll('.modal').forEach(modal => {
         modal.classList.remove('active');
     });
+    const form = document.getElementById('addNoticeForm');
+    if (form && form._editing) {
+        form._editing = null;
+        document.getElementById('addNoticeModalLabel').textContent = 'Add New Notice';
+        form.reset();
+    }
 }
 
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal')) {
-        e.target.classList.remove('active');
+        closeModal(e.target.id);
     }
 });
 
@@ -334,12 +369,50 @@ function formatDateTime(date) {
     });
 }
 
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function withLoading(btnId, callback) {
+    return async function(...args) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return callback.apply(this, args);
+        if (btn.disabled) return;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Loading...';
+        try {
+            await callback.apply(this, args);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    };
+}
+
 function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
 const style = document.createElement('style');
 style.textContent = `
+    .spinner {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.6s linear infinite;
+        vertical-align: middle;
+        margin-right: 4px;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
     @keyframes shake {
         0%, 100% { transform: translateX(0); }
         10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }

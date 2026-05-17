@@ -2,15 +2,19 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
+const { JWT_SECRET, invalidateToken } = require('../middleware/auth');
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    console.error('FATAL: JWT_SECRET environment variable is not set. Check your .env file.');
-    process.exit(1);
-}
+const loginLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { error: 'Too many login attempts. Please try again in a minute.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
     try {
         const { username, password } = req.body;
 
@@ -123,6 +127,11 @@ router.get('/me', async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        invalidateToken(token);
+    }
     res.json({ message: 'Logout successful' });
 });
 

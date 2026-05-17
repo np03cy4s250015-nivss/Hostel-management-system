@@ -1,18 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const https = require('https');
+const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    console.error('FATAL: JWT_SECRET environment variable is not set. Check your .env file.');
+if (!process.env.ESEWA_SECRET_KEY) {
+    console.error('FATAL: ESEWA_SECRET_KEY environment variable is not set. Check your .env file.');
     process.exit(1);
 }
 
 const ESEWA_MERCHANT_CODE = process.env.ESEWA_MERCHANT_CODE || 'EPAYTEST';
-const ESEWA_SECRET_KEY = process.env.ESEWA_SECRET_KEY || '8gBm/:&EnhH.1/q';
+const ESEWA_SECRET_KEY = process.env.ESEWA_SECRET_KEY;
 const ESEWA_SANDBOX_BASE = 'https://rc-epay.esewa.com.np';
 const FRONTEND_BASE_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5500/frontend';
 const BACKEND_PORT = process.env.PORT || 3000;
@@ -51,26 +50,16 @@ function generateSignature(totalAmount, transactionUuid, productCode) {
 }
 
 function verifySignature(data, signature) {
-    const expected = generateSignature(data.total_amount, data.transaction_uuid, data.product_code);
+    if (!data.signed_field_names) return false;
+    const fields = data.signed_field_names.split(',');
+    const message = fields.map(f => `${f}=${data[f]}`).join(',');
+    const expected = crypto.createHmac('sha256', ESEWA_SECRET_KEY)
+        .update(message)
+        .digest('base64');
     const a = Buffer.from(expected);
     const b = Buffer.from(signature);
     if (a.length !== b.length) return false;
     return crypto.timingSafeEqual(a, b);
-}
-
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'No token provided' });
-    }
-    const token = authHeader.split(' ')[1];
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (err) {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
 }
 
 // Success callback from eSewa (no auth — eSewa redirects here)
@@ -82,6 +71,11 @@ router.get('/success', async (req, res) => {
         }
 
         const decoded = JSON.parse(Buffer.from(data, 'base64').toString('utf-8'));
+
+        if (!verifySignature(decoded, decoded.signature)) {
+            console.error('eSewa callback signature verification failed');
+            return res.redirect(`${FRONTEND_BASE_URL}/dashboard_user.html?payment=failed&reason=invalid_signature`);
+        }
 
         const payStatus = await checkEsewaTransactionStatus(
             decoded.product_code,
@@ -99,6 +93,10 @@ router.get('/success', async (req, res) => {
         }
 
         const payment = payments[0];
+
+        if (payment.status === 'completed') {
+            return res.redirect(`${FRONTEND_BASE_URL}/dashboard_user.html?payment=success&transaction_uuid=${decoded.transaction_uuid}&refId=${decoded.transaction_code || ''}`);
+        }
 
         if (payStatus === 'COMPLETE' || payStatus === 'complete') {
             await db.execute(
@@ -248,20 +246,18 @@ router.post('/verify', async (req, res) => {
             });
         }
 
-        if (req.user.role !== 'admin') {
-            const status = await checkEsewaTransactionStatus(
-                ESEWA_MERCHANT_CODE,
-                parseFloat(payment.amount).toFixed(2),
-                transactionUuid
-            );
+        const status = await checkEsewaTransactionStatus(
+            ESEWA_MERCHANT_CODE,
+            parseFloat(payment.amount).toFixed(2),
+            transactionUuid
+        );
 
-            if (status !== 'COMPLETE' && status !== 'complete') {
-                await db.execute(
-                    "UPDATE payments SET status = 'failed' WHERE id = ?",
-                    [payment.id]
-                );
-                return res.status(400).json({ error: `Payment not completed on eSewa (status: ${status})` });
-            }
+        if (status !== 'COMPLETE' && status !== 'complete') {
+            await db.execute(
+                "UPDATE payments SET status = 'failed' WHERE id = ?",
+                [payment.id]
+            );
+            return res.status(400).json({ error: `Payment not completed on eSewa (status: ${status})` });
         }
 
         await db.execute(

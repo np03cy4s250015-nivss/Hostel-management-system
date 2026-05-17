@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const { authenticateToken, isAdmin } = require('../middleware/auth');
 
 const UPLOAD_DIR = path.join(__dirname, '..', 'users');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -25,36 +25,7 @@ const upload = multer({
     }
 });
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    console.error('FATAL: JWT_SECRET environment variable is not set. Check your .env file.');
-    process.exit(1);
-}
-
-function authenticateToken(req, res, next) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'No token provided' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (err) {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-}
-
 router.use(authenticateToken);
-
-function isAdmin(req, res, next) {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-    next();
-}
 
 router.get('/stats', async (req, res) => {
     try {
@@ -75,6 +46,9 @@ router.get('/stats', async (req, res) => {
 
 router.get('/students', async (req, res) => {
     try {
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+        const offset = (page - 1) * limit;
         const [students] = await db.execute(`
             SELECT s.id, s.admission_number, s.price,
                    u.username, u.first_name, u.last_name, u.email, u.phone, u.image_url,
@@ -83,7 +57,8 @@ router.get('/students', async (req, res) => {
             JOIN users u ON s.user_id = u.id
             LEFT JOIN rooms r ON s.room_id = r.id
             ORDER BY s.id DESC
-        `);
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
         res.json(students);
     } catch (error) {
         console.error('Get students error:', error);
@@ -184,7 +159,7 @@ router.delete('/students/:id', isAdmin, async (req, res) => {
 router.get('/students/:id', async (req, res) => {
     try {
         const [students] = await db.execute(`
-            SELECT s.id, s.admission_number, s.price,
+            SELECT s.id, s.user_id, s.admission_number, s.price,
                    u.username, u.first_name, u.last_name, u.email, u.phone, u.image_url,
                    r.room_number, r.floor, r.capacity, r.status as room_status
             FROM students s
@@ -196,6 +171,11 @@ router.get('/students/:id', async (req, res) => {
         if (students.length === 0) {
             return res.status(404).json({ error: 'Student not found' });
         }
+        
+        if (req.user.role !== 'admin' && students[0].user_id !== req.user.id) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
         res.json(students[0]);
     } catch (error) {
         console.error('Get student error:', error);
@@ -227,7 +207,7 @@ router.post('/students/:id/image', (req, res, next) => {
             if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
         }
 
-        const imageUrl = `${req.protocol}://${req.get('host')}/users/${req.file.filename}`;
+        const imageUrl = `/users/${req.file.filename}`;
         await db.execute('UPDATE users SET image_url = ? WHERE id = ?', [imageUrl, userId]);
 
         res.json({ imageUrl, message: 'Image uploaded successfully' });
@@ -423,6 +403,14 @@ router.post('/complaints', async (req, res) => {
         if (!studentId || !category || !description) {
             return res.status(400).json({ error: 'All fields are required' });
         }
+        
+        if (description.length > 2000) {
+            return res.status(400).json({ error: 'Description must be under 2000 characters' });
+        }
+        
+        if (category.length > 100) {
+            return res.status(400).json({ error: 'Category must be under 100 characters' });
+        }
 
         if (req.user.role === 'student') {
             const [students] = await db.execute(
@@ -527,6 +515,14 @@ router.post('/notices', async (req, res) => {
         const { title, content, priority } = req.body;
         const postedBy = req.user.id;
         
+        if (title.length > 200) {
+            return res.status(400).json({ error: 'Title must be under 200 characters' });
+        }
+        
+        if (content.length > 5000) {
+            return res.status(400).json({ error: 'Content must be under 5000 characters' });
+        }
+        
         await db.execute(
             'INSERT INTO notices (title, content, posted_by, priority) VALUES (?, ?, ?, ?)',
             [title, content, postedBy, priority || 'normal']
@@ -536,6 +532,29 @@ router.post('/notices', async (req, res) => {
     } catch (error) {
         console.error('Add notice error:', error);
         res.status(500).json({ error: 'Failed to publish notice' });
+    }
+});
+
+router.put('/notices/:id', isAdmin, async (req, res) => {
+    try {
+        const { title, content, priority } = req.body;
+        if (!title || !content) {
+            return res.status(400).json({ error: 'Title and content are required' });
+        }
+        if (title.length > 200) {
+            return res.status(400).json({ error: 'Title must be under 200 characters' });
+        }
+        if (content.length > 5000) {
+            return res.status(400).json({ error: 'Content must be under 5000 characters' });
+        }
+        await db.execute(
+            'UPDATE notices SET title = ?, content = ?, priority = ? WHERE id = ?',
+            [title, content, priority || 'normal', req.params.id]
+        );
+        res.json({ message: 'Notice updated successfully' });
+    } catch (error) {
+        console.error('Update notice error:', error);
+        res.status(500).json({ error: 'Failed to update notice' });
     }
 });
 
@@ -857,11 +876,12 @@ router.get('/notifications', async (req, res) => {
             `);
             
             requests.forEach(r => {
+                const displayValue = r.setting_type === 'password' ? '********' : r.new_value;
                 notifications.push({
                     id: `request_${r.id}`,
                     type: 'request',
                     title: 'Setting Change Request',
-                    message: `${r.setting_type}: ${r.old_value} → ${r.new_value}`,
+                    message: `${r.setting_type}: ${r.old_value || ''} → ${displayValue}`,
                     refId: r.id,
                     timestamp: r.created_at,
                     status: r.status

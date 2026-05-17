@@ -135,13 +135,11 @@ async function loadStudents() {
 
 function filterStudents() {
     const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
-    const statusFilter = document.getElementById('studentStatusFilter').value;
     
     let filtered = studentsData.filter(s => {
         const fullName = `${s.first_name} ${s.last_name}`.toLowerCase();
         const matchesSearch = fullName.includes(searchTerm);
-        const matchesStatus = !statusFilter || s.status === statusFilter;
-        return matchesSearch && matchesStatus;
+        return matchesSearch;
     });
     
     filtered.sort((a, b) => {
@@ -392,7 +390,7 @@ function renderStudentsCardViewWithData(students) {
     container.innerHTML = students.map(s => `
         <div class="management-card">
             <div class="management-card-top">
-                <span class="management-card-id">#${s.admission_number}</span>
+                <span class="management-card-id">#${escapeHtml(s.admission_number)}</span>
                 <span class="badge badge-success">${s.status || 'Active'}</span>
             </div>
             <div class="management-card-body">
@@ -402,19 +400,19 @@ function renderStudentsCardViewWithData(students) {
                         : `<div class="student-avatar-placeholder">${(s.first_name[0] + s.last_name[0]).toUpperCase()}</div>`
                     }
                     <div>
-                        <div class="management-card-title" style="margin-bottom:2px;">${s.first_name} ${s.last_name}</div>
+                        <div class="management-card-title" style="margin-bottom:2px;">${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</div>
                     </div>
                 </div>
                 <div class="management-card-info">
                     <div class="info-row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                         <span class="info-label">Email</span>
-                        <span>${s.email}</span>
+                        <span>${escapeHtml(s.email)}</span>
                     </div>
                     <div class="info-row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
                         <span class="info-label">Room</span>
-                        <span>${s.room_number || '-'}</span>
+                        <span>${escapeHtml(s.room_number) || '-'}</span>
                     </div>
                     <div class="info-row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -502,12 +500,12 @@ function renderComplaintsCardViewWithData(complaints) {
                 <span class="badge ${statusMap[c.status].class}">${statusMap[c.status].label}</span>
             </div>
             <div class="management-card-body">
-                <div class="management-card-title">${c.category}</div>
+                <div class="management-card-title">${escapeHtml(c.category)}</div>
                 <div class="management-card-info">
                     <div class="info-row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                         <span class="info-label">Student</span>
-                        <span>${c.first_name} ${c.last_name}</span>
+                        <span>${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}</span>
                     </div>
                     <div class="info-row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -517,7 +515,7 @@ function renderComplaintsCardViewWithData(complaints) {
                     <div class="info-row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                         <span class="info-label">Desc</span>
-                        <span>${c.description.substring(0, 50)}...</span>
+                        <span>${escapeHtml(c.description.substring(0, 50))}...</span>
                     </div>
                 </div>
             </div>
@@ -597,10 +595,10 @@ function renderStudentsTable(students) {
     
     tbody.innerHTML = students.map(s => `
         <tr>
-            <td>#${s.admission_number}</td>
-            <td><div style="display:flex;align-items:center;gap:8px;">${s.image_url ? `<img src="${imageUrl(s.image_url)}" class="student-avatar-sm" alt="">` : `<div class="student-avatar-placeholder" style="width:32px;height:32px;font-size:0.75rem;">${(s.first_name[0] + s.last_name[0]).toUpperCase()}</div>`}<span>${s.first_name} ${s.last_name}</span></div></td>
-            <td>${s.room_number || '-'}</td>
-            <td>${s.email}</td>
+            <td>#${escapeHtml(s.admission_number)}</td>
+            <td><div style="display:flex;align-items:center;gap:8px;">${s.image_url ? `<img src="${imageUrl(s.image_url)}" class="student-avatar-sm" alt="">` : `<div class="student-avatar-placeholder" style="width:32px;height:32px;font-size:0.75rem;">${(s.first_name[0] + s.last_name[0]).toUpperCase()}</div>`}<span>${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</span></div></td>
+            <td>${escapeHtml(s.room_number) || '-'}</td>
+            <td>${escapeHtml(s.email)}</td>
             <td>${s.price ? '$' + parseFloat(s.price).toFixed(2) : '-'}</td>
             <td><span class="badge badge-success">${s.status || 'Active'}</span></td>
             <td>
@@ -728,9 +726,9 @@ function renderComplaintsTable(complaints) {
     tbody.innerHTML = complaints.map((c, i) => `
         <tr>
             <td>${i + 1}</td>
-            <td>${c.first_name} ${c.last_name}</td>
-            <td>${c.category}</td>
-            <td>${c.description.substring(0, 30)}...</td>
+            <td>${escapeHtml(c.first_name)} ${escapeHtml(c.last_name)}</td>
+            <td>${escapeHtml(c.category)}</td>
+            <td>${escapeHtml(c.description.substring(0, 30))}...</td>
             <td>${new Date(c.created_at).toLocaleDateString()}</td>
             <td>${statusMap[c.status]}</td>
             <td>
@@ -772,8 +770,8 @@ async function loadNotices() {
         noticeList.innerHTML = notices.map(n => `
             <div class="notice-item-admin">
                 <div class="notice-content">
-                    <h4>${n.title}</h4>
-                    <p>${n.content}</p>
+                    <h4>${escapeHtml(n.title)}</h4>
+                    <p>${escapeHtml(n.content)}</p>
                     <span class="notice-meta">Posted on: ${new Date(n.created_at).toLocaleDateString()}</span>
                 </div>
                 <div class="action-btns">
@@ -800,6 +798,7 @@ async function loadNotices() {
 function getOrdinal(n) {
     const s = ['th', 'st', 'nd', 'rd'];
     const v = n % 100;
+    if (v >= 11 && v <= 13) return s[0];
     return s[(v - 20) % 10] || s[v] || s[0];
 }
 
@@ -916,10 +915,16 @@ async function addStudent() {
     const roomId = document.getElementById('studentRoom').value;
     const username = document.getElementById('studentUsername').value;
     const password = document.getElementById('studentPassword').value;
+    const submitBtn = document.querySelector('#addStudentModal .btn-primary');
     
     if (!name || !email || !phone || !price || !roomId || !username || !password) {
         showToast('Please fill in all required fields', 'error');
         return;
+    }
+    
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner"></span> Adding...';
     }
     
     const nameParts = name.split(' ');
@@ -963,6 +968,11 @@ async function addStudent() {
     } catch (error) {
         console.error('Error adding student:', error);
         showToast('Failed to add student', 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Add Student';
+        }
     }
 }
 
@@ -1062,16 +1072,34 @@ async function deleteRoom(roomId) {
     });
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    const noticeForm = document.getElementById('addNoticeForm');
+    if (noticeForm) {
+        noticeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (noticeForm._editing) {
+                noticeForm._editing(e);
+            } else {
+                addNotice();
+            }
+        });
+    }
+});
+
 async function addNotice() {
     const title = document.getElementById('noticeTitle').value;
     const content = document.getElementById('noticeContent').value;
+    const submitBtn = document.querySelector('#addNoticeModal .btn-primary');
     
     if (!title || !content) {
         showToast('Please fill in all required fields', 'error');
         return;
     }
     
-    const user = getCurrentUser();
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner"></span> Publishing...';
+    }
     
     try {
         const response = await fetch(`${DATA_API_BASE_URL}/notices`, {
@@ -1092,10 +1120,16 @@ async function addNotice() {
         showToast('Notice published successfully!', 'success');
         closeModal('addNoticeModal');
         document.getElementById('addNoticeForm').reset();
+        document.getElementById('addNoticeModalLabel').textContent = 'Add New Notice';
         loadNotices();
     } catch (error) {
         console.error('Error adding notice:', error);
         showToast('Failed to add notice', 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Publish Notice';
+        }
     }
 }
 
@@ -1177,19 +1211,19 @@ async function viewStudent(studentId) {
             </div>` : ''}
             <div class="detail-item">
                 <label>Admission Number</label>
-                <span>${student.admission_number}</span>
+                <span>${escapeHtml(student.admission_number)}</span>
             </div>
             <div class="detail-item">
                 <label>Full Name</label>
-                <span>${student.first_name} ${student.last_name}</span>
+                <span>${escapeHtml(student.first_name)} ${escapeHtml(student.last_name)}</span>
             </div>
             <div class="detail-item">
                 <label>Email</label>
-                <span>${student.email}</span>
+                <span>${escapeHtml(student.email)}</span>
             </div>
             <div class="detail-item">
                 <label>Phone</label>
-                <span>${student.phone}</span>
+                <span>${escapeHtml(student.phone)}</span>
             </div>
             <div class="detail-item">
                 <label>Room Number</label>
@@ -1352,19 +1386,19 @@ async function viewComplaint(complaintId) {
         content.innerHTML = `
             <div class="detail-item">
                 <label>Student Name</label>
-                <span>${complaint.first_name} ${complaint.last_name}</span>
+                <span>${escapeHtml(complaint.first_name)} ${escapeHtml(complaint.last_name)}</span>
             </div>
             <div class="detail-item">
                 <label>Email</label>
-                <span>${complaint.email}</span>
+                <span>${escapeHtml(complaint.email)}</span>
             </div>
             <div class="detail-item">
                 <label>Category</label>
-                <span>${complaint.category}</span>
+                <span>${escapeHtml(complaint.category)}</span>
             </div>
             <div class="detail-item" style="grid-column: span 2;">
                 <label>Description</label>
-                <span>${complaint.description}</span>
+                <span>${escapeHtml(complaint.description)}</span>
             </div>
             <div class="detail-item">
                 <label>Status</label>
@@ -1377,7 +1411,7 @@ async function viewComplaint(complaintId) {
             ${complaint.resolution_notes ? `
             <div class="detail-item" style="grid-column: span 2;">
                 <label>Resolution Notes</label>
-                <span>${complaint.resolution_notes}</span>
+                <span>${escapeHtml(complaint.resolution_notes)}</span>
             </div>
             ` : ''}
         `;
@@ -1388,9 +1422,54 @@ async function viewComplaint(complaintId) {
     }
 }
 
-function editNotice(noticeId) {
-    console.log('Editing notice:', noticeId);
-    showToast('Edit functionality coming soon', 'warning');
+async function editNotice(noticeId) {
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/notices`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch notices');
+        const notices = await response.json();
+        const notice = notices.find(n => n.id === noticeId);
+        if (!notice) throw new Error('Notice not found');
+
+        document.getElementById('noticeTitle').value = notice.title;
+        document.getElementById('noticeContent').value = notice.content;
+        document.getElementById('addNoticeModalLabel').textContent = 'Edit Notice';
+
+        const form = document.getElementById('addNoticeForm');
+        form._editing = async function(e) {
+            const title = document.getElementById('noticeTitle').value;
+            const content = document.getElementById('noticeContent').value;
+            if (!title || !content) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+            try {
+                const res = await fetch(`${DATA_API_BASE_URL}/notices/${noticeId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify({ title, content, priority: 'normal' })
+                });
+                if (!res.ok) throw new Error('Failed to update notice');
+                showToast('Notice updated successfully!', 'success');
+                closeModal('addNoticeModal');
+                form._editing = null;
+                document.getElementById('addNoticeModalLabel').textContent = 'Add New Notice';
+                form.reset();
+                loadNotices();
+            } catch (error) {
+                console.error('Error updating notice:', error);
+                showToast('Failed to update notice', 'error');
+            }
+        };
+        openModal('addNoticeModal');
+    } catch (error) {
+        console.error('Error editing notice:', error);
+        showToast('Failed to load notice data', 'error');
+    }
 }
 
 function exportReport() {
@@ -1786,8 +1865,8 @@ async function initAdminNotifications() {
     updateNotificationBadge();
     
     await checkForNewNotifications();
-    // Poll for new notifications every 30 seconds
-    notificationCheckInterval = setInterval(checkForNewNotifications, 30000);
+    // Poll for new notifications every 15 seconds
+    notificationCheckInterval = setInterval(checkForNewNotifications, 5000);
 }
 
 async function checkForNewNotifications() {
@@ -1800,31 +1879,52 @@ async function checkForNewNotifications() {
         
         const apiNotifications = await response.json();
         
-        // Dedup by type+refId (more reliable than API id which gets overwritten)
-        const existingKeys = adminNotifications.map(n => `${n.type}_${n.refId}`);
+        // Detect new notifications and status changes
+        let needsComplaintReload = false;
+        let needsPaymentReload = false;
+        let needsRequestReload = false;
         
-        // Check if there are new payment notifications - refresh payments + stats
-        const paymentNotifs = apiNotifications.filter(n => n.type === 'payment');
-        const hasNewPayment = paymentNotifs.some(n => !existingKeys.includes(`payment_${n.refId}`));
-        if (hasNewPayment) {
-            loadPayments();
-            loadStats();
-        }
-        
-        // Add only new notifications from API
         apiNotifications.forEach(n => {
-            const key = `${n.type}_${n.refId}`;
-            if (!existingKeys.includes(key)) {
+            const existing = adminNotifications.find(en => en.id === n.id);
+            if (!existing) {
+                // Skip if previously dismissed and status hasn't changed
+                const dismissed = JSON.parse(localStorage.getItem('hms_dismissed_notifications') || '{}');
+                if (dismissed[n.id] === n.status) return;
+                if (dismissed[n.id] && dismissed[n.id] !== n.status) {
+                    delete dismissed[n.id];
+                    localStorage.setItem('hms_dismissed_notifications', JSON.stringify(dismissed));
+                }
+                if (n.type === 'complaint') needsComplaintReload = true;
+                if (n.type === 'payment') needsPaymentReload = true;
+                if (n.type === 'request') needsRequestReload = true;
                 addNotification({
                     type: n.type,
                     title: n.title,
                     message: n.message,
                     refId: n.refId,
                     timestamp: n.timestamp,
-                    status: n.status
+                    status: n.status,
+                    id: n.id
+                });
+            } else if (existing.status !== n.status) {
+                if (n.type === 'complaint') needsComplaintReload = true;
+                if (n.type === 'request') needsRequestReload = true;
+                adminNotifications = adminNotifications.filter(en => en.id !== n.id);
+                addNotification({
+                    type: n.type,
+                    title: n.title,
+                    message: n.message,
+                    refId: n.refId,
+                    timestamp: n.timestamp,
+                    status: n.status,
+                    id: n.id
                 });
             }
         });
+        
+        if (needsComplaintReload) { loadComplaints(); loadStats(); }
+        if (needsPaymentReload) { loadPayments(); loadStats(); }
+        if (needsRequestReload) { loadSettingsRequests(); }
         
         // Update local storage with latest data
         localStorage.setItem(getPreviousComplaintsKey(), JSON.stringify(
@@ -1875,6 +1975,17 @@ function markAllAsRead(event) {
     if (event) event.stopPropagation();
     adminNotifications.forEach(n => n.read = true);
     localStorage.setItem(getNotificationStorageKey(), JSON.stringify(adminNotifications));
+    renderNotifications();
+    updateNotificationBadge();
+}
+
+function clearAllNotifications(event) {
+    if (event) event.stopPropagation();
+    const dismissed = {};
+    adminNotifications.forEach(n => { dismissed[n.id] = n.status; });
+    localStorage.setItem('hms_dismissed_notifications', JSON.stringify(dismissed));
+    adminNotifications = [];
+    localStorage.removeItem(getNotificationStorageKey());
     renderNotifications();
     updateNotificationBadge();
 }

@@ -128,5 +128,6 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 
 -- Default admin user (password: admin123)
+-- WARNING: Change this password immediately after first login for production use.
 INSERT INTO users (username, password, role, first_name, last_name, email, phone) 
 VALUES ('admin', '$2b$10$0McFV9JvPsbarUbjzB9Tf.J.bJrnijJXnW9dn5SyEU6oJnZ97n5Ge', 'admin', 'Admin', 'Warden', 'admin@hms.com', '1234567890');

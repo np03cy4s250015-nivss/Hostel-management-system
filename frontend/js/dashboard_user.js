@@ -83,6 +83,7 @@ function showSection(section) {
 function getOrdinal(n) {
     const s = ['th', 'st', 'nd', 'rd'];
     const v = n % 100;
+    if (v >= 11 && v <= 13) return s[0];
     return s[(v - 20) % 10] || s[v] || s[0];
 }
 
@@ -126,7 +127,8 @@ async function loadUserData() {
         loadUserProfile(),
         loadUserComplaints(),
         loadNotices(),
-        loadUserPaymentStatus()
+        loadUserPaymentStatus(),
+        loadUserPaymentHistory()
     ]);
 }
 
@@ -215,8 +217,8 @@ async function loadUserComplaints() {
         tbody.innerHTML = complaints.map((c, i) => `
             <tr>
                 <td>${i + 1}</td>
-                <td>${c.category}</td>
-                <td>${c.description.substring(0, 40)}...</td>
+                <td>${escapeHtml(c.category)}</td>
+                <td>${escapeHtml(c.description.substring(0, 40))}...</td>
                 <td>${new Date(c.created_at).toLocaleDateString()}</td>
                 <td>${statusMap[c.status]}</td>
             </tr>
@@ -246,8 +248,8 @@ function loadNotices() {
             <div class="notice-item">
                 <div class="notice-date">${new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                 <div class="notice-content">
-                    <h4>${n.title}</h4>
-                    <p>${n.content.substring(0, 80)}...</p>
+                    <h4>${escapeHtml(n.title)}</h4>
+                    <p>${escapeHtml(n.content.substring(0, 80))}...</p>
                 </div>
             </div>
         `).join('');
@@ -262,10 +264,16 @@ function loadNotices() {
 async function submitComplaint() {
     const category = document.getElementById('complaintCategory').value;
     const description = document.getElementById('complaintDescription').value;
+    const submitBtn = document.querySelector('#complaintModal .btn-primary');
     
     if (!category || !description) {
         showToast('Please fill in all fields', 'error');
         return;
+    }
+    
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner"></span> Submitting...';
     }
     
     try {
@@ -298,6 +306,11 @@ async function submitComplaint() {
     } catch (error) {
         console.error('Error submitting complaint:', error);
         showToast('Failed to submit complaint', 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Submit Complaint';
+        }
     }
 }
 
@@ -463,7 +476,6 @@ async function initiatePayment() {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = paymentData.esewaUrl;
-        form.target = '_blank';
         form.style.display = 'none';
 
         const params = paymentData.params;
@@ -588,7 +600,7 @@ function loadUserSettings() {
  * Note: Username changes are not allowed (removed from form)
  * Theme changes are applied immediately via dropdown, not through this form submission.
  */
-function saveSettings() {
+async function saveSettings() {
     const currentPassword = document.getElementById('settingsCurrentPassword').value;
     const newPassword = document.getElementById('settingsNewPassword').value;
     const confirmPassword = document.getElementById('settingsConfirmPassword').value;
@@ -707,8 +719,8 @@ async function initUserNotifications() {
     updateUserNotificationBadge();
     
     await checkForUserNotifications();
-    // Poll for new notifications every 30 seconds
-    userNotificationCheckInterval = setInterval(checkForUserNotifications, 30000);
+    // Poll for new notifications every 15 seconds
+    userNotificationCheckInterval = setInterval(checkForUserNotifications, 5000);
 }
 
 async function checkForUserNotifications() {
@@ -721,22 +733,49 @@ async function checkForUserNotifications() {
         
         const apiNotifications = await response.json();
         
-        // Get existing notification IDs from local storage
-        const existingIds = userNotifications.map(n => n.id);
+        // Detect new notifications and status changes
+        let needsComplaintReload = false;
+        let needsNoticeReload = false;
         
-        // Add only new notifications from API
         apiNotifications.forEach(n => {
-            if (!existingIds.includes(n.id)) {
+            const existing = userNotifications.find(en => en.id === n.id);
+            if (!existing) {
+                // Skip if previously dismissed and status hasn't changed
+                const dismissed = JSON.parse(localStorage.getItem('hms_user_dismissed_notifications') || '{}');
+                if (dismissed[n.id] === n.status) return;
+                if (dismissed[n.id] && dismissed[n.id] !== n.status) {
+                    delete dismissed[n.id];
+                    localStorage.setItem('hms_user_dismissed_notifications', JSON.stringify(dismissed));
+                }
+                if (n.type === 'complaint') needsComplaintReload = true;
+                if (n.type === 'notice') needsNoticeReload = true;
                 addUserNotification({
                     type: n.type,
                     title: n.title,
                     message: n.message,
                     refId: n.refId,
                     timestamp: n.timestamp,
-                    status: n.status
+                    status: n.status,
+                    id: n.id
                 });
+            } else if (existing.status !== n.status) {
+                if (n.type === 'complaint') needsComplaintReload = true;
+                userNotifications = userNotifications.filter(en => en.id !== n.id);
+                addUserNotification({
+                    type: n.type,
+                    title: n.title,
+                    message: n.message,
+                    refId: n.refId,
+                    timestamp: n.timestamp,
+                    status: n.status,
+                    id: n.id
+                });
+                showToast(n.title, 'info');
             }
         });
+        
+        if (needsComplaintReload) { loadUserComplaints(); loadUserPaymentStatus(); }
+        if (needsNoticeReload) { loadNotices(); }
         
         // Remove notifications for notices that no longer exist (deleted by admin)
         const activeNoticeIds = apiNotifications.filter(n => n.type === 'notice').map(n => n.refId);
@@ -760,9 +799,7 @@ function addUserNotification(notification) {
     if (!notification.timestamp) notification.timestamp = new Date().toISOString();
     notification.read = false;
     
-    const existingKeys = userNotifications.map(n => `${n.type}_${n.refId}`);
-    const key = `${notification.type}_${notification.refId}`;
-    if (existingKeys.includes(key)) return;
+    if (userNotifications.some(n => n.id === notification.id)) return;
     
     userNotifications.unshift(notification);
     
@@ -789,6 +826,17 @@ function markUserNotificationsAsRead(event) {
     if (event) event.stopPropagation();
     userNotifications.forEach(n => n.read = true);
     localStorage.setItem(getUserNotificationStorageKey(), JSON.stringify(userNotifications));
+    renderUserNotifications();
+    updateUserNotificationBadge();
+}
+
+function clearUserNotifications(event) {
+    if (event) event.stopPropagation();
+    const dismissed = {};
+    userNotifications.forEach(n => { dismissed[n.id] = n.status; });
+    localStorage.setItem('hms_user_dismissed_notifications', JSON.stringify(dismissed));
+    userNotifications = [];
+    localStorage.removeItem(getUserNotificationStorageKey());
     renderUserNotifications();
     updateUserNotificationBadge();
 }
