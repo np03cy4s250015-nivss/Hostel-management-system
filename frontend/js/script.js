@@ -2,7 +2,7 @@
 // Hostel Management System - Main JavaScript
 // ============================================
 
-const API_BASE_URL = 'http://127.0.0.1:3000/api/auth';
+const API_BASE_URL = (window._env_ && window._env_.API_BASE_URL) || 'http://127.0.0.1:3000/api/auth';
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');

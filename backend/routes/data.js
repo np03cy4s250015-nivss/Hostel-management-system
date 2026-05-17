@@ -27,7 +27,8 @@ const upload = multer({
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
+    console.error('FATAL: JWT_SECRET environment variable is not set. Check your .env file.');
+    process.exit(1);
 }
 
 function authenticateToken(req, res, next) {
@@ -48,10 +49,17 @@ function authenticateToken(req, res, next) {
 
 router.use(authenticateToken);
 
+function isAdmin(req, res, next) {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+}
+
 router.get('/stats', async (req, res) => {
     try {
         const [[totalStudents]] = await db.execute('SELECT COUNT(*) as count FROM students');
-        const [[occupiedRooms]] = await db.execute("SELECT COUNT(*) as count FROM rooms WHERE status = 'full'");
+        const [[occupiedRooms]] = await db.execute('SELECT COUNT(*) as count FROM rooms WHERE current_occupancy > 0');
         const [[pendingComplaints]] = await db.execute("SELECT COUNT(*) as count FROM complaints WHERE status IN ('pending', 'in_progress')");
         
         res.json({
@@ -83,14 +91,21 @@ router.get('/students', async (req, res) => {
     }
 });
 
-router.post('/students', async (req, res) => {
+router.post('/students', isAdmin, async (req, res) => {
     const connection = await db.getConnection();
     try {
         const { username, password, firstName, lastName, email, phone, admissionNumber, roomId, price } = req.body;
 
+        if (!username || !password || !firstName || !lastName || !email || !admissionNumber) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        await connection.beginTransaction();
+
         if (roomId) {
-            const [roomCheck] = await connection.execute('SELECT capacity, current_occupancy FROM rooms WHERE id = ?', [roomId]);
+            const [roomCheck] = await connection.execute('SELECT capacity, current_occupancy FROM rooms WHERE id = ? FOR UPDATE', [roomId]);
             if (roomCheck.length > 0 && roomCheck[0].current_occupancy >= roomCheck[0].capacity) {
+                await connection.rollback();
                 return res.status(400).json({ error: 'Room is already at full capacity' });
             }
         }
@@ -113,20 +128,28 @@ router.post('/students', async (req, res) => {
             await connection.execute('UPDATE rooms SET current_occupancy = current_occupancy + 1, status = CASE WHEN current_occupancy + 1 >= capacity THEN \'full\' ELSE \'available\' END WHERE id = ?', [roomId]);
         }
 
+        await connection.commit();
         res.status(201).json({ message: 'Student added successfully', studentId: studentResult.insertId });
     } catch (error) {
+        await connection.rollback();
         console.error('Add student error:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ error: 'Username or admission number already exists' });
+        }
         res.status(500).json({ error: 'Failed to add student' });
     } finally {
         connection.release();
     }
 });
 
-router.delete('/students/:id', async (req, res) => {
+router.delete('/students/:id', isAdmin, async (req, res) => {
     const connection = await db.getConnection();
     try {
+        await connection.beginTransaction();
+
         const [student] = await connection.execute('SELECT s.user_id, s.room_id, u.image_url FROM students s JOIN users u ON s.user_id = u.id WHERE s.id = ?', [req.params.id]);
         if (student.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ error: 'Student not found' });
         }
         
@@ -137,15 +160,20 @@ router.delete('/students/:id', async (req, res) => {
             if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }
         
-        await connection.execute('DELETE FROM students WHERE id = ?', [req.params.id]);
+        // Delete user first (ON DELETE CASCADE will remove student record)
         await connection.execute('DELETE FROM users WHERE id = ?', [student[0].user_id]);
         
         if (roomId) {
-            await connection.execute('UPDATE rooms SET current_occupancy = current_occupancy - 1, status = CASE WHEN current_occupancy - 1 < capacity THEN \'available\' ELSE \'full\' END WHERE id = ?', [roomId]);
+            await connection.execute(
+                'UPDATE rooms SET current_occupancy = GREATEST(current_occupancy - 1, 0), status = CASE WHEN GREATEST(current_occupancy - 1, 0) < capacity THEN \'available\' ELSE \'full\' END WHERE id = ?',
+                [roomId]
+            );
         }
         
+        await connection.commit();
         res.json({ message: 'Student deleted successfully' });
     } catch (error) {
+        await connection.rollback();
         console.error('Delete student error:', error);
         res.status(500).json({ error: 'Failed to delete student' });
     } finally {
@@ -210,18 +238,22 @@ router.post('/students/:id/image', (req, res, next) => {
     }
 });
 
-router.put('/students/:id', async (req, res) => {
+router.put('/students/:id', isAdmin, async (req, res) => {
     const connection = await db.getConnection();
     try {
         const { firstName, lastName, email, phone, price, roomId } = req.body;
         
-        const [student] = await connection.execute('SELECT user_id, room_id FROM students WHERE id = ?', [req.params.id]);
+        await connection.beginTransaction();
+
+        const [student] = await connection.execute('SELECT user_id, room_id FROM students WHERE id = ? FOR UPDATE', [req.params.id]);
         if (student.length === 0) {
+            await connection.rollback();
             return res.status(404).json({ error: 'Student not found' });
         }
         
         const userId = student[0].user_id;
         const oldRoomId = student[0].room_id;
+        const targetRoomId = roomId !== undefined && roomId !== '' ? parseInt(roomId, 10) : null;
         
         await connection.execute(
             'UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ? WHERE id = ?',
@@ -233,37 +265,38 @@ router.put('/students/:id', async (req, res) => {
             [price !== undefined && price !== null && price !== '' ? price : null, req.params.id]
         );
         
+        const roomChanged = targetRoomId !== oldRoomId;
+        
         if (roomId !== undefined) {
-            if (roomId && oldRoomId !== roomId) {
-                const [targetRoom] = await connection.execute('SELECT capacity, current_occupancy FROM rooms WHERE id = ?', [roomId]);
+            if (targetRoomId && roomChanged) {
+                const [targetRoom] = await connection.execute('SELECT capacity, current_occupancy FROM rooms WHERE id = ? FOR UPDATE', [targetRoomId]);
                 if (targetRoom.length > 0 && targetRoom[0].current_occupancy >= targetRoom[0].capacity) {
+                    await connection.rollback();
                     return res.status(400).json({ error: 'Target room is already at full capacity' });
                 }
             }
 
-            await connection.execute('UPDATE students SET room_id = ? WHERE id = ?', [roomId || null, req.params.id]);
+            await connection.execute('UPDATE students SET room_id = ? WHERE id = ?', [targetRoomId, req.params.id]);
             
-            if (oldRoomId && oldRoomId !== roomId) {
-                const [oldRoom] = await connection.execute('SELECT capacity, current_occupancy FROM rooms WHERE id = ?', [oldRoomId]);
-                if (oldRoom.length > 0) {
-                    const newOccupancy = oldRoom[0].current_occupancy - 1;
-                    const newStatus = newOccupancy < oldRoom[0].capacity ? 'available' : 'full';
-                    await connection.execute('UPDATE rooms SET current_occupancy = ?, status = ? WHERE id = ?', [newOccupancy, newStatus, oldRoomId]);
-                }
+            if (oldRoomId && roomChanged) {
+                await connection.execute(
+                    'UPDATE rooms SET current_occupancy = GREATEST(current_occupancy - 1, 0), status = CASE WHEN GREATEST(current_occupancy - 1, 0) < capacity THEN \'available\' ELSE \'full\' END WHERE id = ?',
+                    [oldRoomId]
+                );
             }
             
-            if (roomId && oldRoomId !== roomId) {
-                const [newRoom] = await connection.execute('SELECT capacity, current_occupancy FROM rooms WHERE id = ?', [roomId]);
-                if (newRoom.length > 0) {
-                    const newOccupancy = newRoom[0].current_occupancy + 1;
-                    const newStatus = newOccupancy >= newRoom[0].capacity ? 'full' : 'available';
-                    await connection.execute('UPDATE rooms SET current_occupancy = ?, status = ? WHERE id = ?', [newOccupancy, newStatus, roomId]);
-                }
+            if (targetRoomId && roomChanged) {
+                await connection.execute(
+                    'UPDATE rooms SET current_occupancy = current_occupancy + 1, status = CASE WHEN current_occupancy + 1 >= capacity THEN \'full\' ELSE \'available\' END WHERE id = ?',
+                    [targetRoomId]
+                );
             }
         }
         
+        await connection.commit();
         res.json({ message: 'Student updated successfully' });
     } catch (error) {
+        await connection.rollback();
         console.error('Update student error:', error);
         res.status(500).json({ error: 'Failed to update student' });
     } finally {
@@ -286,13 +319,33 @@ router.get('/rooms', async (req, res) => {
     }
 });
 
-router.post('/rooms', async (req, res) => {
+router.post('/rooms', isAdmin, async (req, res) => {
     try {
         const { roomNumber, floor, capacity, status } = req.body;
-        
+
+        if (!roomNumber || floor === undefined || floor === '' || !capacity) {
+            return res.status(400).json({ error: 'Room number, floor, and capacity are required' });
+        }
+
+        const floorNum = parseInt(floor, 10);
+        const capacityNum = parseInt(capacity, 10);
+
+        if (isNaN(floorNum) || floorNum < 1) {
+            return res.status(400).json({ error: 'Floor must be a positive number' });
+        }
+        if (isNaN(capacityNum) || capacityNum < 1 || capacityNum > 4) {
+            return res.status(400).json({ error: 'Capacity must be between 1 and 4' });
+        }
+
+        const validStatuses = ['available', 'full', 'maintenance'];
+        const finalStatus = status || 'available';
+        if (!validStatuses.includes(finalStatus)) {
+            return res.status(400).json({ error: 'Invalid room status' });
+        }
+
         await db.execute(
             'INSERT INTO rooms (room_number, floor, capacity, status) VALUES (?, ?, ?, ?)',
-            [roomNumber, floor, capacity, status || 'available']
+            [roomNumber, floorNum, capacityNum, finalStatus]
         );
 
         res.status(201).json({ message: 'Room added successfully' });
@@ -302,13 +355,26 @@ router.post('/rooms', async (req, res) => {
     }
 });
 
-router.delete('/rooms/:id', async (req, res) => {
+router.delete('/rooms/:id', isAdmin, async (req, res) => {
+    const connection = await db.getConnection();
     try {
-        await db.execute('DELETE FROM rooms WHERE id = ?', [req.params.id]);
+        await connection.beginTransaction();
+
+        const [studentsInRoom] = await connection.execute('SELECT COUNT(*) as count FROM students WHERE room_id = ?', [req.params.id]);
+        if (studentsInRoom[0].count > 0) {
+            await connection.rollback();
+            return res.status(400).json({ error: 'Cannot delete room with students assigned. Reassign students first.' });
+        }
+
+        await connection.execute('DELETE FROM rooms WHERE id = ?', [req.params.id]);
+        await connection.commit();
         res.json({ message: 'Room deleted successfully' });
     } catch (error) {
+        await connection.rollback();
         console.error('Delete room error:', error);
         res.status(500).json({ error: 'Failed to delete room' });
+    } finally {
+        connection.release();
     }
 });
 
@@ -324,10 +390,20 @@ router.get('/complaints', async (req, res) => {
             JOIN users u ON s.user_id = u.id
         `;
         let params = [];
+        let conditions = [];
+
+        if (req.user.role === 'student') {
+            conditions.push('s.user_id = ?');
+            params.push(req.user.id);
+        }
         
         if (statusFilter) {
-            query += ' WHERE c.status = ?';
+            conditions.push('c.status = ?');
             params.push(statusFilter);
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
         }
         
         query += ' ORDER BY c.id DESC';
@@ -346,6 +422,16 @@ router.post('/complaints', async (req, res) => {
         
         if (!studentId || !category || !description) {
             return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        if (req.user.role === 'student') {
+            const [students] = await db.execute(
+                'SELECT id FROM students WHERE id = ? AND user_id = ?',
+                [studentId, req.user.id]
+            );
+            if (students.length === 0) {
+                return res.status(403).json({ error: 'You can only submit complaints for yourself' });
+            }
         }
         
         await db.execute(
@@ -381,12 +467,36 @@ router.get('/complaints/:id', async (req, res) => {
     }
 });
 
-router.put('/complaints/:id', async (req, res) => {
+router.put('/complaints/:id', isAdmin, async (req, res) => {
     try {
         const { status, resolutionNotes } = req.body;
+
+        if (!status) {
+            return res.status(400).json({ error: 'Status is required' });
+        }
+
+        const [existing] = await db.execute('SELECT status FROM complaints WHERE id = ?', [req.params.id]);
+        if (existing.length === 0) {
+            return res.status(404).json({ error: 'Complaint not found' });
+        }
+
+        const currentStatus = existing[0].status;
+        const validTransitions = {
+            'pending': ['in_progress', 'rejected'],
+            'in_progress': ['resolved', 'pending', 'rejected'],
+            'resolved': [],
+            'rejected': []
+        };
+
+        if (!validTransitions[currentStatus] || !validTransitions[currentStatus].includes(status)) {
+            return res.status(400).json({
+                error: `Cannot transition from '${currentStatus}' to '${status}'`
+            });
+        }
+
         await db.execute(
             'UPDATE complaints SET status = ?, resolution_notes = ? WHERE id = ?',
-            [status, resolutionNotes, req.params.id]
+            [status, resolutionNotes || null, req.params.id]
         );
         res.json({ message: 'Complaint updated successfully' });
     } catch (error) {
@@ -429,7 +539,7 @@ router.post('/notices', async (req, res) => {
     }
 });
 
-router.delete('/notices/:id', async (req, res) => {
+router.delete('/notices/:id', isAdmin, async (req, res) => {
     try {
         await db.execute('DELETE FROM notices WHERE id = ?', [req.params.id]);
         res.json({ message: 'Notice deleted successfully' });
@@ -602,11 +712,18 @@ router.post('/settings-requests', async (req, res) => {
             });
         }
         
+        // Hash password before storing in the request table
+        let storedNewValue = newValue;
+        if (settingType === 'password') {
+            const bcrypt = require('bcrypt');
+            storedNewValue = await bcrypt.hash(newValue, 10);
+        }
+        
         await db.execute(
             `INSERT INTO settings_change_requests 
                 (user_id, setting_type, old_value, new_value, reason, status, created_at) 
              VALUES (?, ?, ?, ?, ?, 'pending', NOW())`,
-            [req.user.id, settingType, oldValue, newValue, reason || null]
+            [req.user.id, settingType, oldValue, storedNewValue, reason || null]
         );
         
         res.status(201).json({ message: 'Settings change request submitted successfully' });
@@ -669,11 +786,10 @@ router.put('/settings-requests/:id', async (req, res) => {
             const { setting_type, new_value } = request;
             
             if (setting_type === 'password') {
-                const bcrypt = require('bcrypt');
-                const hashedPassword = await bcrypt.hash(new_value, 10);
+                // new_value is already bcrypt-hashed when stored (see POST /settings-requests)
                 await connection.execute(
                     'UPDATE users SET password = ? WHERE id = ?',
-                    [hashedPassword, request.user_id]
+                    [new_value, request.user_id]
                 );
             } else if (setting_type === 'theme') {
                 // Upsert theme preference into user_settings
@@ -824,6 +940,75 @@ router.get('/notifications', async (req, res) => {
     } catch (error) {
         console.error('Notifications error:', error);
         res.status(500).json({ error: 'Failed to fetch notifications' });
+    }
+});
+
+// Verify current password for authenticated user
+router.post('/verify-password', async (req, res) => {
+    try {
+        const { currentPassword } = req.body;
+        if (!currentPassword) {
+            return res.status(400).json({ error: 'Current password is required' });
+        }
+
+        const [users] = await db.execute(
+            'SELECT password FROM users WHERE id = ?',
+            [req.user.id]
+        );
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const bcrypt = require('bcrypt');
+        const valid = await bcrypt.compare(currentPassword, users[0].password);
+        if (!valid) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+
+        res.json({ message: 'Password verified' });
+    } catch (error) {
+        console.error('Verify password error:', error);
+        res.status(500).json({ error: 'Failed to verify password' });
+    }
+});
+
+// Direct password change for admin (requires current password verification)
+router.put('/change-password', async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: 'Current password and new password are required' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: 'New password must be at least 6 characters' });
+        }
+
+        const [users] = await db.execute(
+            'SELECT password FROM users WHERE id = ?',
+            [req.user.id]
+        );
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const bcrypt = require('bcrypt');
+        const valid = await bcrypt.compare(currentPassword, users[0].password);
+        if (!valid) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await db.execute(
+            'UPDATE users SET password = ? WHERE id = ?',
+            [hashedPassword, req.user.id]
+        );
+
+        res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+        console.error('Change password error:', error);
+        res.status(500).json({ error: 'Failed to change password' });
     }
 });
 

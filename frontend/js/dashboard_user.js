@@ -3,8 +3,9 @@
 // ============================================
 
 // Use existing DATA_API_BASE_URL from script.js
-const DATA_API_BASE_URL = 'http://127.0.0.1:3000/api/data';
-const UPLOAD_BASE_URL = DATA_API_BASE_URL.replace('/api/data', '');
+const API_ORIGIN = (window._env_ && window._env_.API_BASE_URL) || 'http://127.0.0.1:3000';
+const DATA_API_BASE_URL = API_ORIGIN + '/api/data';
+const UPLOAD_BASE_URL = API_ORIGIN;
 
 function imageUrl(url) {
     if (!url) return null;
@@ -267,24 +268,16 @@ async function submitComplaint() {
         return;
     }
     
-    const user = getCurrentUser();
-    
     try {
-        const response = await fetch(`${DATA_API_BASE_URL}/students`, {
-            headers: { 
-                'Authorization': `Bearer ${getAuthToken()}`,
-                'Content-Type': 'application/json'
-            }
+        const profileRes = await fetch(`${DATA_API_BASE_URL}/my-profile`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
         });
-        
-        const students = await response.json();
-        const student = students.find(s => s.email === user.email);
-        
-        if (!student) {
+        if (!profileRes.ok) {
             showToast('Student record not found', 'error');
             return;
         }
-        
+        const profile = await profileRes.json();
+
         await fetch(`${DATA_API_BASE_URL}/complaints`, {
             method: 'POST',
             headers: {
@@ -292,7 +285,7 @@ async function submitComplaint() {
                 'Authorization': `Bearer ${getAuthToken()}`
             },
             body: JSON.stringify({
-                studentId: student.id,
+                studentId: profile.id,
                 category,
                 description
             })
@@ -326,7 +319,6 @@ async function loadUserPaymentStatus() {
         const amountEl = document.getElementById('paymentAmount');
         const statusBadge = document.getElementById('paymentStatusBadge');
         const payBtn = document.getElementById('payNowBtn');
-        const simBtn = document.getElementById('simulatePayBtn');
         const credsNote = document.getElementById('testCredsNote');
         const feeStat = document.getElementById('feeStatusStat');
         const totalCountEl = document.getElementById('totalPaymentsCount');
@@ -343,7 +335,6 @@ async function loadUserPaymentStatus() {
                 statusBadge.className = 'badge badge-success';
             }
             if (payBtn) payBtn.style.display = 'none';
-            if (simBtn) simBtn.style.display = 'none';
             if (credsNote) credsNote.style.display = 'none';
             if (feeStat) {
                 feeStat.textContent = 'Paid';
@@ -359,7 +350,6 @@ async function loadUserPaymentStatus() {
                 payBtn.disabled = false;
                 payBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg> Retry Payment`;
             }
-            if (simBtn) simBtn.style.display = 'inline-flex';
             if (credsNote) credsNote.style.display = 'block';
             if (feeStat) {
                 feeStat.textContent = 'Pending';
@@ -375,7 +365,6 @@ async function loadUserPaymentStatus() {
                 payBtn.disabled = false;
                 payBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg> Pay Now with eSewa`;
             }
-            if (simBtn) simBtn.style.display = 'inline-flex';
             if (credsNote) credsNote.style.display = 'block';
             if (feeStat) {
                 feeStat.textContent = 'Due';
@@ -505,14 +494,12 @@ async function initiatePayment() {
 
 async function getUserStudentId() {
     try {
-        const response = await fetch(`${DATA_API_BASE_URL}/students`, {
+        const response = await fetch(`${DATA_API_BASE_URL}/my-profile`, {
             headers: { 'Authorization': `Bearer ${getAuthToken()}` }
         });
         if (!response.ok) return null;
-        const students = await response.json();
-        const user = getCurrentUser();
-        const student = students.find(s => s.email === user.email);
-        return student ? student.id : null;
+        const profile = await response.json();
+        return profile.id || null;
     } catch (e) {
         return null;
     }
@@ -573,42 +560,6 @@ async function verifyPayment(transactionUuid, refId) {
     }
 }
 
-async function simulatePayment() {
-    if (!confirm('This will mark the current month as paid without real payment. Test only?')) return;
-
-    const studentId = await getUserStudentId();
-    if (!studentId) {
-        showToast('Student record not found', 'error');
-        return;
-    }
-
-    const now = new Date();
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-    try {
-        const response = await fetch(`${PAYMENT_API_BASE_URL}/simulate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: JSON.stringify({ studentId, month })
-        });
-
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error || 'Simulation failed');
-        }
-
-        showToast('Payment marked as paid (test mode)!', 'success');
-        loadUserPaymentStatus();
-        loadUserPaymentHistory();
-    } catch (error) {
-        console.error('Simulate payment error:', error);
-        showToast(error.message || 'Failed to simulate payment', 'error');
-    }
-}
-
 // Run payment return check on page load
 document.addEventListener('DOMContentLoaded', function() {
     checkPaymentReturn();
@@ -662,12 +613,33 @@ function saveSettings() {
         return;
     }
     
+    // Verify current password before submitting request
+    try {
+        const verifyRes = await fetch(`${DATA_API_BASE_URL}/verify-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({ currentPassword })
+        });
+        if (!verifyRes.ok) {
+            const err = await verifyRes.json();
+            showToast(err.error || 'Current password is incorrect', 'error');
+            return;
+        }
+    } catch (error) {
+        console.error('Error verifying password:', error);
+        showToast('Failed to verify current password', 'error');
+        return;
+    }
+
     // Submit password change request
     const submitRequests = async () => {
         try {
             showToast('Submitting password change request for approval...', 'info');
             
-            await fetch(`${DATA_API_BASE_URL}/settings-requests`, {
+            const res = await fetch(`${DATA_API_BASE_URL}/settings-requests`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -680,6 +652,11 @@ function saveSettings() {
                     reason: 'Change password to new secure password'
                 })
             });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Failed to submit request');
+            }
             
             // Clear password fields
             document.getElementById('settingsCurrentPassword').value = '';
@@ -730,8 +707,8 @@ async function initUserNotifications() {
     updateUserNotificationBadge();
     
     await checkForUserNotifications();
-    // Poll for new notifications every 2 seconds for near real-time updates
-    userNotificationCheckInterval = setInterval(checkForUserNotifications, 2000);
+    // Poll for new notifications every 30 seconds
+    userNotificationCheckInterval = setInterval(checkForUserNotifications, 30000);
 }
 
 async function checkForUserNotifications() {

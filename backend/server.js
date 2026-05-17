@@ -9,7 +9,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://127.0.0.1:5500').split(',').map(u => {
+    try { return new URL(u).origin; } catch { return u; }
+});
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

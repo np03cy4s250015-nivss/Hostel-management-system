@@ -7,7 +7,8 @@ const https = require('https');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
+    console.error('FATAL: JWT_SECRET environment variable is not set. Check your .env file.');
+    process.exit(1);
 }
 
 const ESEWA_MERCHANT_CODE = process.env.ESEWA_MERCHANT_CODE || 'EPAYTEST';
@@ -15,7 +16,7 @@ const ESEWA_SECRET_KEY = process.env.ESEWA_SECRET_KEY || '8gBm/:&EnhH.1/q';
 const ESEWA_SANDBOX_BASE = 'https://rc-epay.esewa.com.np';
 const FRONTEND_BASE_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5500/frontend';
 const BACKEND_PORT = process.env.PORT || 3000;
-const BACKEND_BASE_URL = `http://127.0.0.1:${BACKEND_PORT}`;
+const BACKEND_BASE_URL = process.env.BACKEND_BASE_URL || `http://127.0.0.1:${BACKEND_PORT}`;
 
 // Auto-create payments table if not exists
 (async () => {
@@ -318,21 +319,17 @@ router.post('/cancel-pending', async (req, res) => {
     }
 });
 
-// Simulate payment completion (for testing, bypasses eSewa)
+// Simulate payment completion (for testing, admin only, bypasses eSewa)
 router.post('/simulate', async (req, res) => {
     try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
         const { studentId, month } = req.body;
 
         if (!studentId || !month) {
             return res.status(400).json({ error: 'studentId and month are required' });
-        }
-
-        const [students] = await db.execute(
-            'SELECT id FROM students WHERE id = ? AND user_id = ?',
-            [studentId, req.user.id]
-        );
-        if (students.length === 0 && req.user.role !== 'admin') {
-            return res.status(404).json({ error: 'Student record not found' });
         }
 
         // Mark all pending payments for this month as completed

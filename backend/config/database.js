@@ -8,7 +8,8 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME || 'hostel_management',
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: false
+    queueLimit: false,
+    ssl: process.env.DB_SSL === 'true' ? {} : undefined
 });
 
 const promisePool = pool.promise();

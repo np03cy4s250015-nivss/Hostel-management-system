@@ -6,7 +6,8 @@ const db = require('../config/database');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
+    console.error('FATAL: JWT_SECRET environment variable is not set. Check your .env file.');
+    process.exit(1);
 }
 
 router.post('/login', async (req, res) => {
@@ -58,9 +59,9 @@ router.post('/login', async (req, res) => {
 
 router.post('/register', async (req, res) => {
     try {
-        const { username, password, role, firstName, lastName, email, phone } = req.body;
+        const { username, password, firstName, lastName, email, phone } = req.body;
 
-        if (!username || !password || !role || !firstName || !lastName || !email) {
+        if (!username || !password || !firstName || !lastName || !email) {
             return res.status(400).json({ error: 'All required fields must be provided' });
         }
 
@@ -68,7 +69,7 @@ router.post('/register', async (req, res) => {
 
         await db.execute(
             'INSERT INTO users (username, password, role, first_name, last_name, email, phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [username, hashedPassword, role, firstName, lastName, email, phone || null]
+            [username, hashedPassword, 'student', firstName, lastName, email, phone || null]
         );
 
         res.status(201).json({ message: 'User registered successfully' });

@@ -26,3 +26,6 @@ Thumbs.db
 # User uploaded images (keep the folder, ignore files)
 backend/users/*
 !backend/users/.gitkeep
+
+# Agent instructions (generated for coding agents)
+AGENTS.md

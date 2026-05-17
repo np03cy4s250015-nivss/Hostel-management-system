@@ -2,8 +2,9 @@
 // Admin Dashboard Specific JavaScript
 // ============================================
 
-const DATA_API_BASE_URL = 'http://127.0.0.1:3000/api/data';
-const UPLOAD_BASE_URL = DATA_API_BASE_URL.replace('/api/data', '');
+const API_ORIGIN = (window._env_ && window._env_.API_BASE_URL) || 'http://127.0.0.1:3000';
+const DATA_API_BASE_URL = API_ORIGIN + '/api/data';
+const UPLOAD_BASE_URL = API_ORIGIN;
 
 function imageUrl(url) {
     if (!url) return null;
@@ -233,11 +234,6 @@ function renderPaymentsTable(filtered) {
             <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="${p.transaction_id || ''}">${p.transaction_id || '-'}</td>
         </tr>
     `).join('');
-}
-
-function imageUrl(path) {
-    if (!path) return '';
-    return path.startsWith('http') ? path : `http://127.0.0.1:3000/${path.replace(/^\/+/, '')}`;
 }
 
 function renderPaymentsCards(filtered) {
@@ -1790,8 +1786,8 @@ async function initAdminNotifications() {
     updateNotificationBadge();
     
     await checkForNewNotifications();
-    // Poll for new notifications every 2 seconds for near real-time updates
-    notificationCheckInterval = setInterval(checkForNewNotifications, 2000);
+    // Poll for new notifications every 30 seconds
+    notificationCheckInterval = setInterval(checkForNewNotifications, 30000);
 }
 
 async function checkForNewNotifications() {
