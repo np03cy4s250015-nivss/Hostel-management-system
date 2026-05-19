@@ -1019,44 +1019,6 @@ async function deleteStudent(studentId) {
     });
 }
 
-async function addRoom() {
-    const roomNumber = document.getElementById('roomNumber').value;
-    const floor = document.getElementById('roomFloor').value;
-    const capacity = document.getElementById('roomCapacity').value;
-    const status = document.getElementById('roomStatus').value;
-    
-    if (!roomNumber || !floor || !capacity || !status) {
-        showToast('Please fill in all required fields', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`${DATA_API_BASE_URL}/rooms`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: JSON.stringify({
-                roomNumber,
-                floor: parseInt(floor),
-                capacity: parseInt(capacity),
-                status
-            })
-        });
-        
-        if (!response.ok) throw new Error('Failed to add room');
-        
-        showToast('Room added successfully!', 'success');
-        closeModal('addRoomModal');
-        document.getElementById('addRoomForm').reset();
-        loadRooms();
-    } catch (error) {
-        console.error('Error adding room:', error);
-        showToast('Failed to add room', 'error');
-    }
-}
-
 async function deleteRoom(roomId) {
     showConfirm('Delete Room', 'Are you sure you want to delete this room?', async () => {
         try {

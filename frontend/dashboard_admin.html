@@ -302,13 +302,7 @@
                 <div class="card" id="rooms">
                     <div class="card-header">
                         <h3>Room Management</h3>
-                        <button class="btn btn-primary btn-sm" onclick="openModal('addRoomModal')">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                            Add Room
-                        </button>
+
                     </div>
                     <div class="card-body">
                         <div class="table-filters">
@@ -812,57 +806,6 @@
         </div>
     </div>
     
-    <!-- Add Room Modal -->
-    <div class="modal" id="addRoomModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Add New Room</h3>
-                <button class="modal-close" onclick="closeModal('addRoomModal')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="addRoomForm">
-                    <div class="form-row">
-                        <div class="form-group-dash">
-                            <label for="roomNumber">Room Number</label>
-                            <input type="text" id="roomNumber" placeholder="Enter room number" required>
-                        </div>
-                        <div class="form-group-dash">
-                            <label for="roomFloor">Floor</label>
-                            <select id="roomFloor" required>
-                                <option value="">Select Floor</option>
-                                <option value="1">1st Floor</option>
-                                <option value="2">2nd Floor</option>
-                                <option value="3">3rd Floor</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group-dash">
-                            <label for="roomCapacity">Capacity</label>
-                            <input type="number" id="roomCapacity" min="1" max="4" placeholder="Enter capacity" required>
-                        </div>
-                        <div class="form-group-dash">
-                            <label for="roomStatus">Status</label>
-                            <select id="roomStatus" required>
-                                <option value="available">Available</option>
-                                <option value="full">Full</option>
-                                <option value="maintenance">Maintenance</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('addRoomModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="addRoom()">Add Room</button>
-            </div>
-        </div>
-    </div>
     
     <!-- Confirm Modal -->
     <div class="modal" id="confirmModal">
