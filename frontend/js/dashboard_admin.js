@@ -4,13 +4,7 @@
 
 const API_ORIGIN = (window._env_ && window._env_.API_BASE_URL) || 'http://127.0.0.1:3000';
 const DATA_API_BASE_URL = API_ORIGIN + '/api/data';
-const UPLOAD_BASE_URL = API_ORIGIN;
 
-function imageUrl(url) {
-    if (!url) return null;
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return UPLOAD_BASE_URL + url;
-}
 let roomsData = []; // Store rooms data for dropdown
 let studentsData = []; // Store students data for filtering
 let complaintsData = []; // Store complaints data for filtering
@@ -751,7 +745,7 @@ function renderComplaintsTable(complaints) {
     `).join('');
 }
 
-async function loadNotices() {
+async function loadNotices(maxItems) {
     try {
         const response = await fetch(`${DATA_API_BASE_URL}/notices`, {
             headers: { 'Authorization': `Bearer ${getAuthToken()}` }
@@ -767,11 +761,18 @@ async function loadNotices() {
             return;
         }
         
-        noticeList.innerHTML = notices.map(n => `
+        let displayNotices = notices;
+        let showViewAll = false;
+        if (maxItems && notices.length > maxItems) {
+            displayNotices = notices.slice(0, maxItems);
+            showViewAll = true;
+        }
+        
+        noticeList.innerHTML = displayNotices.map(n => `
             <div class="notice-item-admin">
                 <div class="notice-content">
                     <h4>${escapeHtml(n.title)}</h4>
-                    <p>${escapeHtml(n.content)}</p>
+                    <p>${escapeHtml(n.content.substring(0, 120))}${n.content.length > 120 ? '...' : ''}</p>
                     <span class="notice-meta">Posted on: ${new Date(n.created_at).toLocaleDateString()}</span>
                 </div>
                 <div class="action-btns">
@@ -789,7 +790,11 @@ async function loadNotices() {
                     </button>
                 </div>
             </div>
-        `).join('');
+        `).join('') + (showViewAll ? `
+            <div class="view-all-notices" style="text-align:center;padding:16px;">
+                <a href="#" onclick="showSection('notices');return false;" class="btn btn-sm btn-secondary">View All Notices (${notices.length})</a>
+            </div>
+        ` : '');
     } catch (error) {
         console.error('Error loading notices:', error);
     }
@@ -1508,6 +1513,8 @@ function showSection(section) {
         if (complaintsSection) complaintsSection.style.display = 'none';
         if (settingsRequestsSection) settingsRequestsSection.style.display = 'none';
         if (settingsSection) settingsSection.style.display = 'none';
+        // Show limited preview on dashboard
+        loadNotices(3);
     } else {
         if (statsGrid) statsGrid.style.display = 'none';
         if (noticesSection) noticesSection.style.display = 'none';
@@ -1529,6 +1536,7 @@ function showSection(section) {
             filterPayments('all');
         } else if (section === 'notices' && noticesSection) {
             noticesSection.style.display = 'block';
+            loadNotices(); // Load full list
         } else if (section === 'settings-requests' && settingsRequestsSection) {
             settingsRequestsSection.style.display = 'block';
             filterRequests('pending');

@@ -23,7 +23,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         }
 
         const [users] = await db.execute(
-            'SELECT id, username, password, role, first_name, last_name, email FROM users WHERE username = ?',
+            'SELECT id, username, password, role, first_name, last_name, email, image_url FROM users WHERE username = ?',
             [username]
         );
 
@@ -52,7 +52,8 @@ router.post('/login', loginLimiter, async (req, res) => {
                 username: user.username,
                 name: `${user.first_name} ${user.last_name}`,
                 role: user.role,
-                email: user.email
+                email: user.email,
+                image_url: user.image_url || null
             }
         });
     } catch (error) {
@@ -104,7 +105,7 @@ router.get('/me', async (req, res) => {
         }
 
         const [users] = await db.execute(
-            'SELECT id, username, role, first_name, last_name, email FROM users WHERE id = ?',
+            'SELECT id, username, role, first_name, last_name, email, image_url FROM users WHERE id = ?',
             [decoded.id]
         );
 
@@ -118,7 +119,8 @@ router.get('/me', async (req, res) => {
             username: user.username,
             name: `${user.first_name} ${user.last_name}`,
             role: user.role,
-            email: user.email
+            email: user.email,
+            image_url: user.image_url || null
         });
     } catch (error) {
         console.error('Get current user error:', error);

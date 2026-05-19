@@ -6,6 +6,7 @@
     <title>Student Dashboard - Hostel Management System</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dark-theme.css" id="dark-theme">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
 </head>
 <body>
     <div class="dashboard-container">
@@ -154,7 +155,7 @@
                 <div class="stats-grid-user">
                     <div class="stat-card">
                         <div class="stat-icon pink">
-                            <img src="assets/icons/room.png" alt="Room">
+                            <img src="assets/icons/room.svg" alt="Room">
                         </div>
                         <div class="stat-details">
                             <h3 id="roomNumberStat">Not Assigned</h3>
@@ -164,7 +165,7 @@
                     
                     <div class="stat-card">
                         <div class="stat-icon blue">
-                            <img src="assets/icons/floor.png" alt="Floor">
+                            <img src="assets/icons/floor.svg" alt="Floor">
                         </div>
                         <div class="stat-details">
                             <h3 id="floorStat">-</h3>
@@ -172,9 +173,9 @@
                         </div>
                     </div>
                     
-                    <div class="stat-card">
+                    <div class="stat-card clickable-stat" onclick="showSection('payments');return false;">
                         <div class="stat-icon green">
-                            <img src="assets/icons/fee.png" alt="Fee">
+                            <img src="assets/icons/fee.svg" alt="Fee">
                         </div>
                         <div class="stat-details">
                             <h3 id="feeStatusStat">-</h3>
@@ -182,9 +183,9 @@
                         </div>
                     </div>
                     
-                    <div class="stat-card">
+                    <div class="stat-card clickable-stat" onclick="showSection('complaints');return false;">
                         <div class="stat-icon orange">
-                            <img src="assets/icons/chat.png" alt="Complaints">
+                            <img src="assets/icons/chat.svg" alt="Complaints">
                         </div>
                         <div class="stat-details">
                             <h3 id="openComplaintsCount">0</h3>
@@ -241,7 +242,7 @@
                 <div class="card section" id="notices" data-section="notices">
                     <div class="card-header">
                         <h3>Recent Notices</h3>
-                        <a href="#" class="btn btn-sm btn-secondary">View All</a>
+                        <a href="#" class="btn btn-sm btn-secondary" onclick="showSection('notices');return false;">View All</a>
                     </div>
                     <div class="card-body">
                         <div class="notice-list" id="userNoticesList">
@@ -254,6 +255,8 @@
                 <div class="card section" id="complaints" data-section="complaints">
                     <div class="card-header">
                         <h3>My Complaints</h3>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-sm btn-secondary" onclick="showSection('complaints');return false;">View All</button>
                         <button class="btn btn-primary btn-sm" onclick="openModal('complaintModal')">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -261,6 +264,7 @@
                             </svg>
                             New Complaint
                         </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">

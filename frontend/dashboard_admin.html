@@ -6,6 +6,7 @@
     <title>Admin Dashboard - Hostel Management System</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dark-theme.css" id="dark-theme">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
 </head>
 <body>
     <div class="dashboard-container">
@@ -179,9 +180,9 @@
             <div class="content-area">
                 <!-- Stats Cards -->
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card clickable-stat" onclick="showSection('students');return false;">
                         <div class="stat-icon pink">
-                            <img src="assets/icons/users.png" alt="Total Students">
+                            <img src="assets/icons/users.svg" alt="Total Students">
                         </div>
                         <div class="stat-details">
                             <h3 id="totalStudents">0</h3>
@@ -189,9 +190,9 @@
                         </div>
                     </div>
                     
-                    <div class="stat-card">
+                    <div class="stat-card clickable-stat" onclick="showSection('rooms');return false;">
                         <div class="stat-icon green">
-                            <img src="assets/icons/building.png" alt="Rooms Occupied">
+                            <img src="assets/icons/building.svg" alt="Rooms Occupied">
                         </div>
                         <div class="stat-details">
                             <h3 id="occupiedRooms">0</h3>
@@ -199,9 +200,9 @@
                         </div>
                     </div>
                     
-                    <div class="stat-card">
+                    <div class="stat-card clickable-stat" onclick="showSection('complaints');return false;">
                         <div class="stat-icon orange">
-                            <img src="assets/icons/chat.png" alt="Pending Complaints">
+                            <img src="assets/icons/chat.svg" alt="Pending Complaints">
                         </div>
                         <div class="stat-details">
                             <h3 id="pendingComplaints">0</h3>
@@ -209,9 +210,9 @@
                         </div>
                     </div>
                     
-                    <div class="stat-card">
+                    <div class="stat-card clickable-stat" onclick="showSection('payments');return false;">
                         <div class="stat-icon red">
-                            <img src="assets/icons/credit-card.png" alt="Monthly Revenue">
+                            <img src="assets/icons/credit-card.svg" alt="Monthly Revenue">
                         </div>
                         <div class="stat-details">
                             <h3>-</h3>
@@ -498,6 +499,8 @@
                 <div class="card" id="notices">
                     <div class="card-header">
                         <h3>Notice Board</h3>
+                        <div style="display:flex;gap:8px;">
+                        <a href="#" class="btn btn-sm btn-secondary" onclick="showSection('notices');return false;">View All</a>
                         <button class="btn btn-primary btn-sm" onclick="openModal('addNoticeModal')">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -505,6 +508,7 @@
                             </svg>
                             Add Notice
                         </button>
+                    </div>
                     </div>
                     <div class="card-body">
                         <div class="notice-list-admin" id="noticesList">

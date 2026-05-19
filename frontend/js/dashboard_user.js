@@ -5,13 +5,6 @@
 // Use existing DATA_API_BASE_URL from script.js
 const API_ORIGIN = (window._env_ && window._env_.API_BASE_URL) || 'http://127.0.0.1:3000';
 const DATA_API_BASE_URL = API_ORIGIN + '/api/data';
-const UPLOAD_BASE_URL = API_ORIGIN;
-
-function imageUrl(url) {
-    if (!url) return null;
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return UPLOAD_BASE_URL + url;
-}
 
 document.addEventListener('DOMContentLoaded', async function() {
     initDashboard();
@@ -55,8 +48,8 @@ function showSection(section) {
         const secSection = sec.getAttribute('data-section');
         
         if (section === 'dashboard') {
-            // On dashboard, show complaints, payments and notices, hide profile and settings
-            if (secSection === 'profile' || secSection === 'settings') {
+            // On dashboard, show complaints and notices, hide payments, profile, and settings
+            if (secSection === 'profile' || secSection === 'settings' || secSection === 'payments') {
                 sec.style.display = 'none';
             } else {
                 sec.style.display = 'block';
@@ -73,11 +66,24 @@ function showSection(section) {
                     loadUserPaymentStatus();
                     loadUserPaymentHistory();
                 }
+                // Reload with full data when navigating to full section
+                if (section === 'notices') {
+                    loadNotices();
+                }
+                if (section === 'complaints') {
+                    loadUserComplaints();
+                }
             } else {
                 sec.style.display = 'none';
             }
         }
     });
+    
+    // On dashboard, reload limited preview
+    if (section === 'dashboard') {
+        loadNotices(3);
+        loadUserComplaints(3);
+    }
 }
 
 function getOrdinal(n) {
@@ -164,9 +170,23 @@ async function loadUserProfile() {
         const container = document.getElementById('profileImageContainer');
         if (profile.image_url) {
             container.innerHTML = `<img src="${imageUrl(profile.image_url)}" class="student-avatar-lg" alt="Profile Photo">`;
+            // Sync fresh image_url into session and sidebar avatar
+            updateSessionField('image_url', profile.image_url);
+            const userInitials = document.getElementById('userInitials');
+            const user = getCurrentUser();
+            if (userInitials && user) {
+                userInitials.innerHTML = `<img src="${imageUrl(profile.image_url)}" alt="${user.name}" onerror="this.outerHTML='${getInitials(user.name)}'">`;
+            }
         } else {
             const initials = ((profile.first_name || '')[0] + (profile.last_name || '')[0]).toUpperCase() || '?';
             container.innerHTML = `<div class="student-avatar-lg" style="display:flex;align-items:center;justify-content:center;background:var(--gray-200);color:var(--gray-500);font-weight:700;font-size:1.5rem;">${initials}</div>`;
+            // Clear stale image_url from session if profile has none
+            updateSessionField('image_url', null);
+            const userInitials = document.getElementById('userInitials');
+            const user = getCurrentUser();
+            if (userInitials && user && !user.image_url) {
+                userInitials.textContent = getInitials(user.name);
+            }
         }
         
         // Profile header
@@ -185,7 +205,7 @@ async function loadUserProfile() {
     }
 }
 
-async function loadUserComplaints() {
+async function loadUserComplaints(maxItems) {
     try {
         const response = await fetch(`${DATA_API_BASE_URL}/complaints`, {
             headers: { 'Authorization': `Bearer ${getAuthToken()}` }
@@ -208,13 +228,20 @@ async function loadUserComplaints() {
             return;
         }
         
+        let displayComplaints = complaints;
+        let showViewAll = false;
+        if (maxItems && complaints.length > maxItems) {
+            displayComplaints = complaints.slice(0, maxItems);
+            showViewAll = true;
+        }
+        
         const statusMap = {
             'pending': '<span class="badge badge-danger">Pending</span>',
             'in_progress': '<span class="badge badge-warning">In Progress</span>',
             'resolved': '<span class="badge badge-success">Resolved</span>'
         };
         
-        tbody.innerHTML = complaints.map((c, i) => `
+        tbody.innerHTML = displayComplaints.map((c, i) => `
             <tr>
                 <td>${i + 1}</td>
                 <td>${escapeHtml(c.category)}</td>
@@ -222,7 +249,13 @@ async function loadUserComplaints() {
                 <td>${new Date(c.created_at).toLocaleDateString()}</td>
                 <td>${statusMap[c.status]}</td>
             </tr>
-        `).join('');
+        `).join('') + (showViewAll ? `
+            <tr class="view-all-row">
+                <td colspan="5" style="text-align:center;padding:12px;border-bottom:none;">
+                    <a href="#" onclick="showSection('complaints');return false;" class="btn btn-sm btn-secondary">View All Complaints (${complaints.length})</a>
+                </td>
+            </tr>
+        ` : '');
     } catch (error) {
         console.error('Error loading complaints:', error);
         const tbody = document.getElementById('userComplaintsTableBody');
@@ -230,7 +263,7 @@ async function loadUserComplaints() {
     }
 }
 
-function loadNotices() {
+function loadNotices(maxItems) {
     fetch(`${DATA_API_BASE_URL}/notices`, {
         headers: { 'Authorization': `Bearer ${getAuthToken()}` }
     })
@@ -244,7 +277,14 @@ function loadNotices() {
             return;
         }
         
-        noticeList.innerHTML = notices.map(n => `
+        let displayNotices = notices;
+        let showViewAll = false;
+        if (maxItems && notices.length > maxItems) {
+            displayNotices = notices.slice(0, maxItems);
+            showViewAll = true;
+        }
+        
+        noticeList.innerHTML = displayNotices.map(n => `
             <div class="notice-item">
                 <div class="notice-date">${new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                 <div class="notice-content">
@@ -252,7 +292,11 @@ function loadNotices() {
                     <p>${escapeHtml(n.content.substring(0, 80))}...</p>
                 </div>
             </div>
-        `).join('');
+        `).join('') + (showViewAll ? `
+            <div class="notice-item view-all-item" style="text-align:center;padding:12px;border-bottom:none;">
+                <a href="#" onclick="showSection('notices');return false;" class="btn btn-sm btn-secondary">View All Notices (${notices.length})</a>
+            </div>
+        ` : '');
     })
     .catch(error => {
         console.error('Error loading notices:', error);

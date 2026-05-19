@@ -3,6 +3,7 @@
 // ============================================
 
 const API_BASE_URL = (window._env_ && window._env_.API_BASE_URL) || 'http://127.0.0.1:3000/api/auth';
+const UPLOAD_BASE_URL = (window._env_ && window._env_.UPLOAD_BASE_URL) || 'http://127.0.0.1:3000';
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
@@ -56,6 +57,7 @@ async function handleLogin(e) {
             name: data.user.name,
             role: data.user.role,
             email: data.user.email,
+            image_url: data.user.image_url || null,
             token: data.token,
             loginTime: new Date().toISOString()
         };
@@ -166,6 +168,22 @@ function getAuthToken() {
     return userData.token || null;
 }
 
+function updateSessionField(key, value) {
+    let session = localStorage.getItem('hms_session') || sessionStorage.getItem('hms_session');
+    if (!session) return;
+    const data = JSON.parse(session);
+    if (data[key] === value) return;
+    data[key] = value;
+    const storage = localStorage.getItem('hms_session') ? localStorage : sessionStorage;
+    storage.setItem('hms_session', JSON.stringify(data));
+}
+
+function imageUrl(url) {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return UPLOAD_BASE_URL + url;
+}
+
 function initDashboard() {
     const user = getCurrentUser();
     if (!user) return;
@@ -176,7 +194,15 @@ function initDashboard() {
     
     if (userName) userName.textContent = user.name;
     if (userRole) userRole.textContent = user.role === 'admin' ? 'Administrator' : 'Student';
-    if (userInitials) userInitials.textContent = getInitials(user.name);
+    
+    if (userInitials) {
+        if (user.image_url) {
+            const initials = getInitials(user.name);
+            userInitials.innerHTML = `<img src="${imageUrl(user.image_url)}" alt="${user.name}" onerror="this.outerHTML='${initials}'">`;
+        } else {
+            userInitials.textContent = getInitials(user.name);
+        }
+    }
     
     initSidebar();
 }
@@ -351,24 +377,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-function formatDate(date) {
-    return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-function formatDateTime(date) {
-    return new Date(date).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
 function escapeHtml(str) {
     if (!str) return '';
     const div = document.createElement('div');
@@ -376,26 +384,7 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-function withLoading(btnId, callback) {
-    return async function(...args) {
-        const btn = document.getElementById(btnId);
-        if (!btn) return callback.apply(this, args);
-        if (btn.disabled) return;
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Loading...';
-        try {
-            await callback.apply(this, args);
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        }
-    };
-}
 
-function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
 
 const style = document.createElement('style');
 style.textContent = `
