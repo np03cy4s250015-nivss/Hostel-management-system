@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dark-theme.css" id="dark-theme">
     <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -62,11 +63,23 @@
                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                          </svg>
                          <span>Complaints</span>
-                     </a>
-                 </div>
-                
-                 <div class="nav-section">
-                     <span class="nav-section-title">Finance</span>
+                      </a>
+                  </div>
+
+                  <div class="nav-section">
+                      <span class="nav-section-title">Reports</span>
+                      <a href="#charts" class="nav-item" onclick="showSection('charts'); closeSidebarMobile();">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <line x1="18" y1="20" x2="18" y2="10"></line>
+                              <line x1="12" y1="20" x2="12" y2="4"></line>
+                              <line x1="6" y1="20" x2="6" y2="14"></line>
+                          </svg>
+                          <span>Charts</span>
+                      </a>
+                  </div>
+
+                  <div class="nav-section">
+                      <span class="nav-section-title">Finance</span>
                      <a href="#payments" class="nav-item" onclick="showSection('payments'); closeSidebarMobile();">
                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
@@ -638,7 +651,31 @@
         </main>
     </div>
     
-    <!-- View Student Modal -->
+                <!-- Charts Section -->
+                <div class="card" id="charts">
+                    <div class="card-header">
+                        <h3>Analytics</h3>
+                        <p class="card-header-subtitle">Monthly overview of students registered, payments received, and amounts due</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="charts-grid">
+                            <div class="chart-card">
+                                <h4>Monthly Overview (Bar)</h4>
+                                <div class="chart-wrap">
+                                    <canvas id="barChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="chart-card">
+                                <h4>Monthly Trend (Line)</h4>
+                                <div class="chart-wrap">
+                                    <canvas id="lineChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+    			<!-- View Student Modal -->
     <div class="modal" id="viewStudentModal">
         <div class="modal-content">
             <div class="modal-header">

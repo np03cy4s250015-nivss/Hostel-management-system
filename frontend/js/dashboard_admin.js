@@ -1485,6 +1485,7 @@ function showSection(section) {
     const complaintsSection = document.getElementById('complaints');
     const settingsRequestsSection = document.getElementById('settings-requests');
     const settingsSection = document.getElementById('settings');
+    const chartsSection = document.getElementById('charts');
     
     if (section === 'dashboard') {
         if (statsGrid) statsGrid.style.display = 'grid';
@@ -1495,6 +1496,7 @@ function showSection(section) {
         if (complaintsSection) complaintsSection.style.display = 'none';
         if (settingsRequestsSection) settingsRequestsSection.style.display = 'none';
         if (settingsSection) settingsSection.style.display = 'none';
+        if (chartsSection) chartsSection.style.display = 'none';
         // Show limited preview on dashboard
         loadNotices(3);
     } else {
@@ -1506,6 +1508,7 @@ function showSection(section) {
         if (complaintsSection) complaintsSection.style.display = 'none';
         if (settingsRequestsSection) settingsRequestsSection.style.display = 'none';
         if (settingsSection) settingsSection.style.display = 'none';
+        if (chartsSection) chartsSection.style.display = 'none';
         
         if (section === 'students' && studentsSection) {
             studentsSection.style.display = 'block';
@@ -1525,6 +1528,9 @@ function showSection(section) {
         } else if (section === 'settings' && settingsSection) {
             settingsSection.style.display = 'block';
             loadAdminSettings();
+        } else if (section === 'charts' && chartsSection) {
+            chartsSection.style.display = 'block';
+            loadCharts();
         }
     }
 }
@@ -2113,6 +2119,177 @@ document.addEventListener('click', function(e) {
 
 if (document.getElementById('notificationBell')) {
     initAdminNotifications();
+}
+
+// ============================================
+// Charts — Bar & Line (Chart.js)
+// ============================================
+
+let barChartInstance = null;
+let lineChartInstance = null;
+
+function destroyCharts() {
+    if (barChartInstance) { barChartInstance.destroy(); barChartInstance = null; }
+    if (lineChartInstance) { lineChartInstance.destroy(); lineChartInstance = null; }
+}
+
+async function loadCharts() {
+    destroyCharts();
+
+    const barParent = document.getElementById('barChart')?.parentElement;
+    const lineParent = document.getElementById('lineChart')?.parentElement;
+    if (!barParent || !lineParent) return;
+
+    // Show loading placeholders
+    barParent.innerHTML = '<div class="chart-placeholder"><p>Loading…</p></div>';
+    lineParent.innerHTML = '<div class="chart-placeholder"><p>Loading…</p></div>';
+
+    try {
+        const response = await fetch(`${DATA_API_BASE_URL}/monthly-stats`, {
+            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+
+        barParent.innerHTML = '';
+        lineParent.innerHTML = '';
+
+        // abort if Chart.js still hasn't initialised
+        if (typeof Chart === 'undefined') {
+            throw new Error('Chart.js library not loaded');
+        }
+
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.font.size = 11;
+        Chart.defaults.plugins.legend.labels.padding = 16;
+        Chart.defaults.layout.padding = { top: 4, bottom: 0, left: 0, right: 0 };
+
+        const chartColors = {
+            students: 'rgba(10, 139, 143, 0.85)',
+            studentsBorder: '#0A8B8F',
+            due: 'rgba(212, 107, 122, 0.85)',
+            dueBorder: '#D46B7A',
+            received: 'rgba(91, 154, 125, 0.85)',
+            receivedBorder: '#5B9A7D'
+        };
+
+        const tickColor = getComputedStyle(document.documentElement).getPropertyValue('--gray-500').trim() || '#9A9282';
+        const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--gray-200').trim() || '#EDE9E0';
+
+        // --- Bar Chart ---
+        const barCtx = document.createElement('canvas');
+        barParent.appendChild(barCtx);
+        barChartInstance = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: 'Students',
+                        data: data.students,
+                        backgroundColor: chartColors.students,
+                        borderColor: chartColors.studentsBorder,
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.75
+                    },
+                    {
+                        label: 'Due ($)',
+                        data: data.due,
+                        backgroundColor: chartColors.due,
+                        borderColor: chartColors.dueBorder,
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.75
+                    },
+                    {
+                        label: 'Received ($)',
+                        data: data.received,
+                        backgroundColor: chartColors.received,
+                        borderColor: chartColors.receivedBorder,
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.75
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { usePointStyle: true, pointStyleWidth: 12 } }
+                },
+                scales: {
+                    x: { stacked: false, ticks: { color: tickColor }, grid: { color: gridColor } },
+                    y: { stacked: false, ticks: { color: tickColor }, grid: { color: gridColor } }
+                }
+            }
+        });
+
+        // --- Line Chart ---
+        const lineCtx = document.createElement('canvas');
+        lineParent.appendChild(lineCtx);
+        lineChartInstance = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: 'Students',
+                        data: data.students,
+                        borderColor: chartColors.studentsBorder,
+                        backgroundColor: 'rgba(10, 139, 143, 0.08)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Due ($)',
+                        data: data.due,
+                        borderColor: chartColors.dueBorder,
+                        backgroundColor: 'rgba(212, 107, 122, 0.08)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Received ($)',
+                        data: data.received,
+                        borderColor: chartColors.receivedBorder,
+                        backgroundColor: 'rgba(91, 154, 125, 0.08)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { usePointStyle: true, pointStyleWidth: 12 } }
+                },
+                scales: {
+                    x: { ticks: { color: tickColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: tickColor }, grid: { color: gridColor } }
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error loading charts:', error);
+        if (barParent) barParent.innerHTML = '<div class="chart-placeholder"><p>Failed to load chart data: ' + escapeHtml(error.message) + '</p></div>';
+        if (lineParent) lineParent.innerHTML = '';
+    }
 }
 
 

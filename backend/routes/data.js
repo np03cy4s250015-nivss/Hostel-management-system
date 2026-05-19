@@ -1036,4 +1036,73 @@ router.put('/change-password', async (req, res) => {
     }
 });
 
+// ==================== MONTHLY STATS (for charts) ====================
+// Get monthly breakdown of students registered, payments due, and payments received
+// Returns last 12 months of data. Admin only.
+router.get('/monthly-stats', async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        // Build a list of the last 12 months (YYYY-MM format)
+        const months = [];
+        const now = new Date();
+        const [minJoined] = await db.execute("SELECT DATE_FORMAT(MIN(joined_at), '%Y-%m-01') as min_month FROM students");
+        const [minPaid] = await db.execute("SELECT DATE_FORMAT(MIN(STR_TO_DATE(paid_month, '%Y-%m')), '%Y-%m-01') as min_month FROM payments WHERE paid_month IS NOT NULL");
+        const minMonthRaw = (minPaid[0]?.min_month || minJoined[0]?.min_month || (now.getFullYear() - 1) + '-01');
+        const minDate = new Date(minMonthRaw);
+
+        for (let i = 11; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            months.push(d.toISOString().slice(0, 7)); // YYYY-MM
+        }
+
+        // Fetch students per joined_at month
+        const [studentRows] = await db.execute(`
+            SELECT DATE_FORMAT(joined_at, '%Y-%m') as ym, COUNT(*) as count
+            FROM students
+            GROUP BY ym
+        `);
+
+        // Fetch payments per paid_month grouped by status
+        const [paymentRows] = await db.execute(`
+            SELECT paid_month as ym, status, SUM(amount) as amount, COUNT(*) as count
+            FROM payments
+            WHERE paid_month IS NOT NULL AND paid_month != ''
+            GROUP BY ym, status
+        `);
+
+        // Build lookup maps
+        const studentMap = {};
+        studentRows.forEach(r => { studentMap[r.ym] = parseInt(r.count, 10); });
+
+        const duePerMonth = {};
+        const receivedPerMonth = {};
+        paymentRows.forEach(r => {
+            const ym = r.ym;
+            if (r.status === 'completed') {
+                receivedPerMonth[ym] = parseFloat(r.amount || 0);
+            } else {
+                // pending or failed = due
+                duePerMonth[ym] = (duePerMonth[ym] || 0) + parseFloat(r.amount || 0);
+            }
+        });
+
+        const labels = months.map(m => {
+            const [y, mo] = m.split('-');
+            return new Date(parseInt(y), parseInt(mo) - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        });
+
+        const studentsSeries = months.map(m => studentMap[m] || 0);
+        const dueSeries = months.map(m => parseFloat((duePerMonth[m] || 0).toFixed(2)));
+        const receivedSeries = months.map(m => parseFloat((receivedPerMonth[m] || 0).toFixed(2)));
+
+        res.json({ labels, students: studentsSeries, due: dueSeries, received: receivedSeries });
+    } catch (error) {
+        console.error('Monthly stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch monthly stats' });
+    }
+});
+
 module.exports = router;
