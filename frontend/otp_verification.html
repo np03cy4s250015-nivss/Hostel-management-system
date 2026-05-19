@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hostel Management System - Verify OTP</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
+                <h1>Reset Password</h1>
+                <p>Enter the OTP sent to you and choose a new password</p>
+            </div>
+
+            <form id="otpForm" class="login-form">
+                <div class="form-group">
+                    <label for="otp">OTP Code</label>
+                    <div class="input-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <input type="text" id="otp" name="otp" placeholder="Enter the 6-digit OTP" maxlength="6" inputmode="numeric" pattern="[0-9]*" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <div class="input-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <input type="password" id="newPassword" name="newPassword" placeholder="New password (min 6 characters)" minlength="6" required>
+                        <button type="button" class="toggle-password" onclick="togglePass()">
+                            <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm New Password</label>
+                    <div class="input-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <input type="password" id="confirmPassword" placeholder="Confirm new password" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn">Reset Password</button>
+
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+                <div id="successMessage" class="error-message" style="display: none; background-color: #F0FDF4; border-color: #BBF7D0; color: #166534;"></div>
+            </form>
+
+            <div class="login-footer">
+                <p><a href="forgot_password.html" style="color: var(--primary-color); font-weight: 500;">&larr; Request New OTP</a></p>
+                <p style="margin-top: 8px;"><a href="../index.html" style="color: var(--gray-500); font-size: 0.85rem;">Back to Login</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = (window._env_ && window._env_.API_BASE_URL) || 'http://127.0.0.1:3000/api/auth';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const userId = sessionStorage.getItem('resetUserId');
+            if (!userId) {
+                document.getElementById('errorMessage').textContent = 'No password reset session found. Please start again.';
+                document.getElementById('errorMessage').style.display = 'block';
+                setTimeout(() => window.location.href = 'forgot_password.html', 3000);
+                return;
+            }
+
+            const form = document.getElementById('otpForm');
+            form.addEventListener('submit', handleResetPassword);
+        });
+
+        async function handleResetPassword(e) {
+            e.preventDefault();
+
+            const userId = sessionStorage.getItem('resetUserId');
+            if (!userId) {
+                showError('Session expired. Please start again.');
+                setTimeout(() => window.location.href = 'forgot_password.html', 2000);
+                return;
+            }
+
+            const otp = document.getElementById('otp').value.trim();
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+            const btn = document.querySelector('.login-btn');
+
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            if (!otp || !newPassword || !confirmPassword) {
+                showError('Please fill in all fields');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showError('Password must be at least 6 characters');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Resetting...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: parseInt(userId), otp, newPassword })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError(data.error || 'Failed to reset password');
+                    return;
+                }
+
+                sessionStorage.removeItem('resetUserId');
+
+                successMsg.textContent = data.message || 'Password reset successful!';
+                successMsg.style.display = 'block';
+
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 2500);
+            } catch (error) {
+                console.error('Reset password error:', error);
+                showError('Unable to connect to server. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Reset Password';
+            }
+        }
+
+        function showError(message) {
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+            successMsg.style.display = 'none';
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+        }
+
+        function togglePass() {
+            const input = document.getElementById('newPassword');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>`;
+            } else {
+                input.type = 'password';
+                icon.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>`;
+            }
+        }
+    </script>
+</body>
+</html>

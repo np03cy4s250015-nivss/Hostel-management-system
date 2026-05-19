@@ -137,4 +137,69 @@ router.post('/logout', (req, res) => {
     res.json({ message: 'Logout successful' });
 });
 
+const { generateOtp, verifyOtp } = require('../services/otpService');
+
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { username, email } = req.body;
+
+        if (!username || !email) {
+            return res.status(400).json({ error: 'Username and email are required' });
+        }
+
+        const [users] = await db.execute(
+            'SELECT id, email FROM users WHERE username = ? AND email = ?',
+            [username, email]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'No account found with that username and email combination' });
+        }
+
+        const user = users[0];
+        const otp = generateOtp(user.id);
+
+        console.log(`[Password Reset] OTP for ${username}: ${otp}`);
+
+        res.json({
+            message: 'OTP sent successfully! Check the server console or Windows notification for your OTP.',
+            otp: otp,
+            userId: user.id
+        });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ error: 'Failed to process request' });
+    }
+});
+
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { userId, otp, newPassword } = req.body;
+
+        if (!userId || !otp || !newPassword) {
+            return res.status(400).json({ error: 'userId, otp, and newPassword are required' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+
+        const result = verifyOtp(userId, otp);
+        if (!result.valid) {
+            return res.status(400).json({ error: result.reason });
+        }
+
+        const hashedPassword = await require('bcrypt').hash(newPassword, 10);
+        await db.execute(
+            'UPDATE users SET password = ? WHERE id = ?',
+            [hashedPassword, userId]
+        );
+
+        res.json({ message: 'Password reset successful! You can now login with your new password.' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ error: 'Failed to reset password' });
+    }
+});
+
 module.exports = router;
