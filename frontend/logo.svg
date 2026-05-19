@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 550 160" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A8B8F"/>
+      <stop offset="100%" stop-color="#097A7E"/>
+    </linearGradient>
+    <linearGradient id="ac" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#D4943F"/>
+      <stop offset="100%" stop-color="#E8A84F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon: Modern rounded hexagon badge -->
+  <rect x="12" y="28" width="110" height="110" rx="22" fill="url(#bg)"/>
+
+  <!-- White modern hostel building inside badge -->
+  <g fill="white" opacity="0.95">
+    <!-- Main building block -->
+    <rect x="36" y="56" width="62" height="66" rx="2"/>
+    <!-- Roof overhang -->
+    <rect x="32" y="50" width="70" height="6" rx="2"/>
+    <!-- Vertical divider -->
+    <line x1="56" y1="56" x2="56" y2="122" stroke="#0A8B8F" stroke-width="1.5" opacity="0.2"/>
+    <line x1="78" y1="56" x2="78" y2="122" stroke="#0A8B8F" stroke-width="1.5" opacity="0.2"/>
+    <!-- Floor lines -->
+    <line x1="36" y1="78" x2="98" y2="78" stroke="#0A8B8F" stroke-width="1" opacity="0.18"/>
+    <line x1="36" y1="100" x2="98" y2="100" stroke="#0A8B8F" stroke-width="1" opacity="0.18"/>
+    <!-- Entrance door -->
+    <rect x="60" y="106" width="14" height="16" rx="1" fill="#0A8B8F" opacity="0.2"/>
+    <!-- Windows row 1 -->
+    <rect x="40" y="62" width="12" height="12" rx="1" fill="#0A8B8F" opacity="0.1"/>
+    <rect x="62" y="62" width="12" height="12" rx="1" fill="#0A8B8F" opacity="0.1"/>
+    <rect x="84" y="62" width="10" height="12" rx="1" fill="#0A8B8F" opacity="0.1"/>
+    <!-- Windows row 2 -->
+    <rect x="40" y="84" width="12" height="12" rx="1" fill="#0A8B8F" opacity="0.1"/>
+    <rect x="84" y="84" width="10" height="12" rx="1" fill="#0A8B8F" opacity="0.1"/>
+    <!-- Windows row 3 (top floor right side) -->
+    <rect x="62" y="84" width="12" height="12" rx="1" fill="#0A8B8F" opacity="0.1"/>
+  </g>
+
+  <!-- Accent dot -->
+  <circle cx="97" cy="43" r="5" fill="url(#ac)"/>
+
+  <!-- Typography -->
+  <text x="148" y="72" font-family="Segoe UI,Tahoma,Geneva,Verdana,sans-serif" font-size="52" font-weight="700" fill="#2D3748" letter-spacing="2">HMS</text>
+
+  <text x="152" y="100" font-family="Segoe UI,Tahoma,Geneva,Verdana,sans-serif" font-size="14" font-weight="600" fill="#7A7265" letter-spacing="4">HOSTEL</text>
+  <text x="152" y="119" font-family="Segoe UI,Tahoma,Geneva,Verdana,sans-serif" font-size="14" font-weight="600" fill="#7A7265" letter-spacing="4">MANAGEMENT</text>
+
+  <!-- Thin accent line under badge -->
+  <line x1="148" y1="131" x2="260" y2="131" stroke="#0A8B8F" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+</svg>
