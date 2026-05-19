@@ -465,8 +465,7 @@ function renderRoomsCardViewWithData(rooms) {
                 </div>
             </div>
             <div class="management-card-actions">
-                <button class="btn btn-primary" onclick="editRoom(${r.id})">Edit</button>
-                <button class="btn btn-danger" onclick="deleteRoom(${r.id})">Delete</button>
+                <button class="btn btn-primary" onclick="viewRoom(${r.id})">View</button>
             </div>
         </div>
     `).join('');
@@ -665,16 +664,10 @@ function renderRoomsTable(rooms) {
             <td>${statusMap[r.status] || r.status}</td>
             <td>
                 <div class="action-btns">
-                    <button class="action-btn edit" title="Edit" onclick="editRoom(${r.id})">
+                    <button class="action-btn view" title="View Occupants" onclick="viewRoom(${r.id})">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    <button class="action-btn delete" title="Delete" onclick="deleteRoom(${r.id})">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
                         </svg>
                     </button>
                 </div>
@@ -1019,24 +1012,56 @@ async function deleteStudent(studentId) {
     });
 }
 
-async function deleteRoom(roomId) {
-    showConfirm('Delete Room', 'Are you sure you want to delete this room?', async () => {
-        try {
-            const response = await fetch(`${DATA_API_BASE_URL}/rooms/${roomId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-            });
-            
-            if (!response.ok) throw new Error('Failed to delete room');
-            
-            showToast('Room deleted successfully!', 'success');
-            loadRooms();
-            loadStats();
-        } catch (error) {
-            console.error('Error deleting room:', error);
-            showToast('Failed to delete room', 'error');
-        }
-    });
+function viewRoom(roomId) {
+    const room = roomsData.find(r => r.id === roomId);
+    if (!room) return;
+
+    const occupants = studentsData.filter(s => s.room_number === room.room_number);
+
+    const statusMap = {
+        'available': '<span class="badge badge-info">Available</span>',
+        'full': '<span class="badge badge-success">Occupied</span>',
+        'maintenance': '<span class="badge badge-warning">Maintenance</span>'
+    };
+
+    const content = document.getElementById('viewRoomContent');
+    content.innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-item">
+                <label>Room Number</label>
+                <span>${room.room_number}</span>
+            </div>
+            <div class="detail-item">
+                <label>Floor</label>
+                <span>${room.floor}${getOrdinal(room.floor)} Floor</span>
+            </div>
+            <div class="detail-item">
+                <label>Type</label>
+                <span>${room.capacity === 1 ? 'Single' : room.capacity === 2 ? 'Double' : 'Triple'}</span>
+            </div>
+            <div class="detail-item">
+                <label>Capacity</label>
+                <span>${room.capacity}</span>
+            </div>
+            <div class="detail-item">
+                <label>Occupied</label>
+                <span>${room.current_occupancy}</span>
+            </div>
+            <div class="detail-item">
+                <label>Status</label>
+                <span>${statusMap[room.status] || room.status}</span>
+            </div>
+        </div>
+        <h4 style="margin-top: 24px; margin-bottom: 12px;">Occupants (${occupants.length})</h4>
+        ${occupants.length === 0 ? '<p style="color: #999;">No occupants in this room.</p>' : occupants.map(s => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-color);">
+            <span style="font-weight:500;">${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</span>
+            <button class="btn btn-primary" style="padding:6px 14px;font-size:13px;" onclick="closeModal('viewRoomModal');viewStudent(${s.id})">View All</button>
+        </div>
+        `).join('')}
+    `;
+
+    document.getElementById('viewRoomModal').classList.add('active');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1327,11 +1352,6 @@ async function saveStudent() {
         console.error('Error saving student:', error);
         showToast('Failed to update student', 'error');
     }
-}
-
-function editRoom(roomId) {
-    console.log('Editing room:', roomId);
-    showToast('Edit functionality coming soon', 'warning');
 }
 
 async function viewComplaint(complaintId) {
