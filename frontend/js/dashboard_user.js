@@ -376,7 +376,6 @@ async function loadUserPaymentStatus() {
         const amountEl = document.getElementById('paymentAmount');
         const statusBadge = document.getElementById('paymentStatusBadge');
         const payBtn = document.getElementById('payNowBtn');
-        const credsNote = document.getElementById('testCredsNote');
         const feeStat = document.getElementById('feeStatusStat');
         const totalCountEl = document.getElementById('totalPaymentsCount');
         const totalAmtEl = document.getElementById('totalAmountPaid');
@@ -392,7 +391,6 @@ async function loadUserPaymentStatus() {
                 statusBadge.className = 'badge badge-success';
             }
             if (payBtn) payBtn.style.display = 'none';
-            if (credsNote) credsNote.style.display = 'none';
             if (feeStat) {
                 feeStat.textContent = 'Paid';
                 feeStat.style.color = 'var(--success-color)';
@@ -407,7 +405,6 @@ async function loadUserPaymentStatus() {
                 payBtn.disabled = false;
                 payBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg> Retry Payment`;
             }
-            if (credsNote) credsNote.style.display = 'block';
             if (feeStat) {
                 feeStat.textContent = 'Pending';
                 feeStat.style.color = 'var(--warning-color)';
@@ -422,7 +419,6 @@ async function loadUserPaymentStatus() {
                 payBtn.disabled = false;
                 payBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg> Pay Now with eSewa`;
             }
-            if (credsNote) credsNote.style.display = 'block';
             if (feeStat) {
                 feeStat.textContent = 'Due';
                 feeStat.style.color = 'var(--danger-color)';
@@ -640,7 +636,7 @@ function loadUserSettings() {
 }
 
 /**
- * Handle settings form submission - Submit change request for admin approval
+ * Handle settings form submission
  * Note: Username changes are not allowed (removed from form)
  * Theme changes are applied immediately via dropdown, not through this form submission.
  */
@@ -662,71 +658,56 @@ async function saveSettings() {
         return;
     }
 
-    // Only password changes require admin approval
     // Theme is handled immediately via dropdown change listener
     if (!newPassword) {
         showToast('No password changes to submit', 'info');
         return;
     }
-    
-    // Verify current password before submitting request
+
+    showToast('Updating password...', 'info');
+
     try {
-        const verifyRes = await fetch(`${DATA_API_BASE_URL}/verify-password`, {
-            method: 'POST',
+        const response = await fetch(`${DATA_API_BASE_URL}/change-password`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${getAuthToken()}`
             },
-            body: JSON.stringify({ currentPassword })
+            body: JSON.stringify({
+                currentPassword,
+                newPassword
+            })
         });
-        if (!verifyRes.ok) {
-            const err = await verifyRes.json();
-            showToast(err.error || 'Current password is incorrect', 'error');
-            return;
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to change password');
         }
-    } catch (error) {
-        console.error('Error verifying password:', error);
-        showToast('Failed to verify current password', 'error');
-        return;
-    }
 
-    // Submit password change request
-    const submitRequests = async () => {
-        try {
-            showToast('Submitting password change request for approval...', 'info');
-            
-            const res = await fetch(`${DATA_API_BASE_URL}/settings-requests`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getAuthToken()}`
-                },
-                body: JSON.stringify({
-                    settingType: 'password',
-                    oldValue: '********',
-                    newValue: newPassword,
-                    reason: 'Change password to new secure password'
-                })
-            });
+        // Clear password fields
+        document.getElementById('settingsCurrentPassword').value = '';
+        document.getElementById('settingsNewPassword').value = '';
+        document.getElementById('settingsConfirmPassword').value = '';
 
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || 'Failed to submit request');
+        // Show confirmation modal with user avatar and name
+        const user = getCurrentUser();
+        const avatar = document.getElementById('pwChangeAvatar');
+        const nameEl = document.getElementById('pwChangeName');
+        if (user && avatar && nameEl) {
+            nameEl.textContent = user.name;
+            if (user.image_url) {
+                const initials = getInitials(user.name);
+                avatar.innerHTML = `<img src="${imageUrl(user.image_url)}" alt="${user.name}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.outerHTML='<span style=\\'color:white;\\'>${initials}</span>'">`;
+            } else {
+                avatar.textContent = getInitials(user.name);
             }
-            
-            // Clear password fields
-            document.getElementById('settingsCurrentPassword').value = '';
-            document.getElementById('settingsNewPassword').value = '';
-            document.getElementById('settingsConfirmPassword').value = '';
-            
-            showToast('Password change request submitted! Awaiting admin approval.', 'success');
-        } catch (error) {
-            console.error('Error submitting request:', error);
-            showToast('Failed to submit password change request', 'error');
         }
-    };
-    
-    submitRequests();
+        openModal('passwordChangeModal');
+    } catch (error) {
+        console.error('Error changing password:', error);
+        showToast(error.message, 'error');
+    }
 }
 
 // Initialize settings form on DOM load

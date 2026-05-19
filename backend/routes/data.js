@@ -996,7 +996,7 @@ router.post('/verify-password', async (req, res) => {
     }
 });
 
-// Direct password change for admin (requires current password verification)
+// Direct password change (requires current password verification)
 router.put('/change-password', async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;

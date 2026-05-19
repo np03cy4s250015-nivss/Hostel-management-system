@@ -313,14 +313,6 @@
                                 </button>
                             </div>
                         </div>
-                        <div id="testCredsNote" class="test-creds-note" style="display:none;">
-                            <strong>eSewa Sandbox Test Credentials:</strong><br>
-                            ID: <code>9806800001</code> to <code>9806800005</code> &nbsp;|&nbsp;
-                            Password: <code>Nepal@123</code> &nbsp;|&nbsp;
-                            MPIN: <code>1122</code> &nbsp;|&nbsp;
-                            OTP: <code>123456</code>
-                        </div>
-
                         <h4 style="margin:0 0 10px 0;">Payment History</h4>
                         <div class="table-responsive">
                             <table>
@@ -471,6 +463,22 @@
         </div>
     </div>
     
+    <!-- Password Change Confirmation Modal -->
+    <div class="modal" id="passwordChangeModal">
+        <div class="modal-content" style="max-width: 360px; text-align: center;">
+            <div class="modal-body" style="padding: 32px 24px;">
+                <div class="password-change-avatar" id="pwChangeAvatar" style="width:64px;height:64px;background:linear-gradient(135deg,#0A8B8F,#D4943F);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.4rem;margin:0 auto 16px;overflow:hidden;">
+                </div>
+                <p id="pwChangeName" style="font-size:1.1rem;font-weight:600;margin-bottom:4px;color:var(--text-primary);"></p>
+                <p style="font-size:0.85rem;color:var(--gray-500);margin-bottom:24px;">Password updated successfully</p>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <button class="btn btn-primary" onclick="closeModal('passwordChangeModal')" style="width:100%;">Stay Signed In</button>
+                    <button class="btn btn-secondary" onclick="closeModal('passwordChangeModal'); logout();" style="width:100%;">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div class="toast-container"></div>
     
