@@ -2136,9 +2136,19 @@ function destroyCharts() {
 async function loadCharts() {
     destroyCharts();
 
-    const chartParent = document.getElementById('mainChart')?.parentElement;
-    if (!chartParent) return;
+    const chartCanvas = document.getElementById('mainChart');
+    if (!chartCanvas) {
+        console.error('Chart canvas element not found');
+        return;
+    }
 
+    // Show loading placeholder inside the canvas container
+    const chartParent = chartCanvas.parentElement;
+    if (!chartParent) {
+        console.error('Chart container not found');
+        return;
+    }
+    
     // Show loading placeholder
     chartParent.innerHTML = '<div class="chart-placeholder"><p>Loading…</p></div>';
 
@@ -2149,7 +2159,14 @@ async function loadCharts() {
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const data = await response.json();
 
-        chartParent.innerHTML = '';
+        // Replace loading placeholder with canvas
+        chartParent.innerHTML = '<canvas id="mainChart"></canvas>';
+        
+        // Get the new canvas element
+        const newChartCanvas = document.getElementById('mainChart');
+        if (!newChartCanvas) {
+            throw new Error('Failed to create chart canvas');
+        }
 
         // abort if Chart.js still hasn't initialised
         if (typeof Chart === 'undefined') {
@@ -2172,8 +2189,7 @@ async function loadCharts() {
         const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--gray-200').trim() || '#EDE9E0';
 
         // --- Line Chart (Due vs Received) ---
-        const chartCtx = document.createElement('canvas');
-        chartParent.appendChild(chartCtx);
+        const chartCtx = newChartCanvas.getContext('2d');
         lineChartInstance = new Chart(chartCtx, {
             type: 'line',
             data: {
@@ -2228,7 +2244,9 @@ async function loadCharts() {
         });
     } catch (error) {
         console.error('Error loading charts:', error);
-        if (chartParent) chartParent.innerHTML = '<div class="chart-placeholder"><p>Failed to load chart data: ' + escapeHtml(error.message) + '</p></div>';
+        if (chartParent) {
+            chartParent.innerHTML = '<div class="chart-placeholder"><p>Failed to load chart data: ' + escapeHtml(error.message) + '</p></div>';
+        }
     }
 }
 
