@@ -98,7 +98,7 @@ async function loadStats() {
                 const payStats = await payResp.json();
                 const revenueEl = document.querySelector('.stat-card:nth-child(4) .stat-details h3');
                 if (revenueEl) {
-                    revenueEl.textContent = '$' + parseFloat(payStats.monthlyRevenue || 0).toFixed(2);
+                    revenueEl.textContent = 'Rs. ' + parseFloat(payStats.monthlyRevenue || 0).toFixed(2);
                 }
             }
         } catch (e) {
@@ -218,7 +218,7 @@ function renderPaymentsTable(filtered) {
             <td>${i + 1}</td>
             <td>${p.first_name || ''} ${p.last_name || ''} (${p.username || ''})</td>
             <td>${p.room_number || '-'}</td>
-            <td>$${parseFloat(p.amount).toFixed(2)}</td>
+            <td>Rs. ${parseFloat(p.amount).toFixed(2)}</td>
             <td>${p.paid_month || '-'}</td>
             <td>${p.payment_method || '-'}</td>
             <td>${statusMap[p.status] || p.status}</td>
@@ -264,7 +264,7 @@ function renderPaymentsCards(filtered) {
                     <div class="info-row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
                         <span class="info-label">Amount</span>
-                        <span style="font-weight:600;color:var(--success-color);">$${parseFloat(p.amount).toFixed(2)}</span>
+                        <span style="font-weight:600;color:var(--success-color);">Rs. ${parseFloat(p.amount).toFixed(2)}</span>
                     </div>
                     <div class="info-row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -411,7 +411,7 @@ function renderStudentsCardViewWithData(students) {
                     <div class="info-row">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                         <span class="info-label">Price</span>
-                        <span>${s.price ? '$' + parseFloat(s.price).toFixed(2) : '-'}</span>
+                        <span>${s.price ? 'Rs. ' + parseFloat(s.price).toFixed(2) : '-'}</span>
                     </div>
                 </div>
             </div>
@@ -592,7 +592,7 @@ function renderStudentsTable(students) {
             <td><div style="display:flex;align-items:center;gap:8px;">${s.image_url ? `<img src="${imageUrl(s.image_url)}" class="student-avatar-sm" alt="">` : `<div class="student-avatar-placeholder" style="width:32px;height:32px;font-size:0.75rem;">${(s.first_name[0] + s.last_name[0]).toUpperCase()}</div>`}<span>${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</span></div></td>
             <td>${escapeHtml(s.room_number) || '-'}</td>
             <td>${escapeHtml(s.email)}</td>
-            <td>${s.price ? '$' + parseFloat(s.price).toFixed(2) : '-'}</td>
+            <td>${s.price ? 'Rs. ' + parseFloat(s.price).toFixed(2) : '-'}</td>
             <td><span class="badge badge-success">${s.status || 'Active'}</span></td>
             <td>
                 <div class="action-btns">
@@ -965,7 +965,7 @@ async function addStudent() {
         loadRooms();
     } catch (error) {
         console.error('Error adding student:', error);
-        showToast('Failed to add student', 'error');
+        showToast(error.message || 'Failed to add student', 'error');
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
@@ -1227,7 +1227,7 @@ async function viewStudent(studentId) {
             </div>
             <div class="detail-item">
                 <label>Monthly Price</label>
-                <span>${student.price ? '$' + parseFloat(student.price).toFixed(2) : '-'}</span>
+                <span>${student.price ? 'Rs. ' + parseFloat(student.price).toFixed(2) : '-'}</span>
             </div>
             <div class="detail-item">
                 <label>Status</label>
@@ -1350,7 +1350,7 @@ async function saveStudent() {
         loadStats();
     } catch (error) {
         console.error('Error saving student:', error);
-        showToast('Failed to update student', 'error');
+        showToast(error.message || 'Failed to update student', 'error');
     }
 }
 
@@ -1977,8 +1977,8 @@ function markAllAsRead(event) {
 
 function clearAllNotifications(event) {
     if (event) event.stopPropagation();
-    const dismissed = {};
-    adminNotifications.forEach(n => { dismissed[n.id] = n.status; });
+    const dismissed = JSON.parse(localStorage.getItem('hms_dismissed_notifications') || '{}');
+    adminNotifications.forEach(n => dismissed[n.id] = n.status);
     localStorage.setItem('hms_dismissed_notifications', JSON.stringify(dismissed));
     adminNotifications = [];
     localStorage.removeItem(getNotificationStorageKey());
@@ -2136,13 +2136,11 @@ function destroyCharts() {
 async function loadCharts() {
     destroyCharts();
 
-    const barParent = document.getElementById('barChart')?.parentElement;
-    const lineParent = document.getElementById('lineChart')?.parentElement;
-    if (!barParent || !lineParent) return;
+    const chartParent = document.getElementById('mainChart')?.parentElement;
+    if (!chartParent) return;
 
-    // Show loading placeholders
-    barParent.innerHTML = '<div class="chart-placeholder"><p>Loading…</p></div>';
-    lineParent.innerHTML = '<div class="chart-placeholder"><p>Loading…</p></div>';
+    // Show loading placeholder
+    chartParent.innerHTML = '<div class="chart-placeholder"><p>Loading…</p></div>';
 
     try {
         const response = await fetch(`${DATA_API_BASE_URL}/monthly-stats`, {
@@ -2151,8 +2149,7 @@ async function loadCharts() {
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const data = await response.json();
 
-        barParent.innerHTML = '';
-        lineParent.innerHTML = '';
+        chartParent.innerHTML = '';
 
         // abort if Chart.js still hasn't initialised
         if (typeof Chart === 'undefined') {
@@ -2165,8 +2162,6 @@ async function loadCharts() {
         Chart.defaults.layout.padding = { top: 4, bottom: 0, left: 0, right: 0 };
 
         const chartColors = {
-            students: 'rgba(10, 139, 143, 0.85)',
-            studentsBorder: '#0A8B8F',
             due: 'rgba(212, 107, 122, 0.85)',
             dueBorder: '#D46B7A',
             received: 'rgba(91, 154, 125, 0.85)',
@@ -2176,79 +2171,16 @@ async function loadCharts() {
         const tickColor = getComputedStyle(document.documentElement).getPropertyValue('--gray-500').trim() || '#9A9282';
         const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--gray-200').trim() || '#EDE9E0';
 
-        // --- Bar Chart ---
-        const barCtx = document.createElement('canvas');
-        barParent.appendChild(barCtx);
-        barChartInstance = new Chart(barCtx, {
-            type: 'bar',
-            data: {
-                labels: data.labels,
-                datasets: [
-                    {
-                        label: 'Students',
-                        data: data.students,
-                        backgroundColor: chartColors.students,
-                        borderColor: chartColors.studentsBorder,
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.75
-                    },
-                    {
-                        label: 'Due ($)',
-                        data: data.due,
-                        backgroundColor: chartColors.due,
-                        borderColor: chartColors.dueBorder,
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.75
-                    },
-                    {
-                        label: 'Received ($)',
-                        data: data.received,
-                        backgroundColor: chartColors.received,
-                        borderColor: chartColors.receivedBorder,
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.75
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top', labels: { usePointStyle: true, pointStyleWidth: 12 } }
-                },
-                scales: {
-                    x: { stacked: false, ticks: { color: tickColor }, grid: { color: gridColor } },
-                    y: { stacked: false, ticks: { color: tickColor }, grid: { color: gridColor } }
-                }
-            }
-        });
-
-        // --- Line Chart ---
-        const lineCtx = document.createElement('canvas');
-        lineParent.appendChild(lineCtx);
-        lineChartInstance = new Chart(lineCtx, {
+        // --- Line Chart (Due vs Received) ---
+        const chartCtx = document.createElement('canvas');
+        chartParent.appendChild(chartCtx);
+        lineChartInstance = new Chart(chartCtx, {
             type: 'line',
             data: {
                 labels: data.labels,
                 datasets: [
                     {
-                        label: 'Students',
-                        data: data.students,
-                        borderColor: chartColors.studentsBorder,
-                        backgroundColor: 'rgba(10, 139, 143, 0.08)',
-                        tension: 0.3,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
-                    },
-                    {
-                        label: 'Due ($)',
+                        label: 'Due (Rs.)',
                         data: data.due,
                         borderColor: chartColors.dueBorder,
                         backgroundColor: 'rgba(212, 107, 122, 0.08)',
@@ -2258,7 +2190,7 @@ async function loadCharts() {
                         pointHoverRadius: 6
                     },
                     {
-                        label: 'Received ($)',
+                        label: 'Received (Rs.)',
                         data: data.received,
                         borderColor: chartColors.receivedBorder,
                         backgroundColor: 'rgba(91, 154, 125, 0.08)',
@@ -2273,7 +2205,16 @@ async function loadCharts() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'top', labels: { usePointStyle: true, pointStyleWidth: 12 } }
+                    legend: { position: 'top', labels: { usePointStyle: true, pointStyleWidth: 12 } },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                if (ctx.dataset.label === 'Due (Rs.)') return '  Due  Rs. ' + ctx.raw.toFixed(0);
+                                if (ctx.dataset.label === 'Received (Rs.)') return '  Received  Rs. ' + ctx.raw.toFixed(0);
+                                return `  ${ctx.dataset.label}  ${ctx.raw}`;
+                            }
+                        }
+                    }
                 },
                 scales: {
                     x: { ticks: { color: tickColor }, grid: { color: gridColor } },
@@ -2287,8 +2228,7 @@ async function loadCharts() {
         });
     } catch (error) {
         console.error('Error loading charts:', error);
-        if (barParent) barParent.innerHTML = '<div class="chart-placeholder"><p>Failed to load chart data: ' + escapeHtml(error.message) + '</p></div>';
-        if (lineParent) lineParent.innerHTML = '';
+        if (chartParent) chartParent.innerHTML = '<div class="chart-placeholder"><p>Failed to load chart data: ' + escapeHtml(error.message) + '</p></div>';
     }
 }
 

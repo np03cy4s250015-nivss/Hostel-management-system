@@ -909,7 +909,7 @@ router.get('/notifications', async (req, res) => {
                     id: `payment_${p.id}`,
                     type: 'payment',
                     title: 'Payment Received',
-                    message: `${p.first_name} ${p.last_name} paid $${parseFloat(p.amount).toFixed(2)} for ${p.paid_month}`,
+                    message: `${p.first_name} ${p.last_name} paid Rs. ${parseFloat(p.amount).toFixed(2)} for ${p.paid_month}`,
                     refId: p.id,
                     timestamp: p.paid_at,
                     status: 'completed'
@@ -1082,7 +1082,7 @@ router.get('/monthly-stats', async (req, res) => {
         paymentRows.forEach(r => {
             const ym = r.ym;
             if (r.status === 'completed') {
-                receivedPerMonth[ym] = parseFloat(r.amount || 0);
+                receivedPerMonth[ym] = (receivedPerMonth[ym] || 0) + parseFloat(r.amount || 0);
             } else {
                 // pending or failed = due
                 duePerMonth[ym] = (duePerMonth[ym] || 0) + parseFloat(r.amount || 0);

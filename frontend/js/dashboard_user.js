@@ -3,7 +3,7 @@
 // ============================================
 
 // Use existing DATA_API_BASE_URL from script.js
-const API_ORIGIN = (window._env_ && window._env_.API_BASE_URL) || 'http://127.0.0.1:3000';
+const API_ORIGIN = typeof CONFIG !== 'undefined' ? CONFIG.API_ORIGIN : 'http://127.0.0.1:3000';
 const DATA_API_BASE_URL = API_ORIGIN + '/api/data';
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -198,7 +198,7 @@ async function loadUserProfile() {
         document.getElementById('phone').textContent = profile.phone || '-';
         document.getElementById('roomNumberDisplay').textContent = profile.room_number || 'Not Assigned';
         document.getElementById('floorNum').textContent = floor ? `${floor}${getOrdinal(floor)} Floor` : '-';
-        document.getElementById('profilePrice').textContent = profile.price ? '$' + parseFloat(profile.price).toFixed(2) : '-';
+        document.getElementById('profilePrice').textContent = profile.price ? 'Rs. ' + parseFloat(profile.price).toFixed(2) : '-';
         document.getElementById('profileJoinedDate').textContent = profile.joined_at ? new Date(profile.joined_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
     } catch (error) {
         console.error('Error loading profile:', error);
@@ -381,9 +381,9 @@ async function loadUserPaymentStatus() {
         const totalAmtEl = document.getElementById('totalAmountPaid');
 
         if (monthEl) monthEl.textContent = data.month || '-';
-        if (amountEl) amountEl.textContent = data.amount ? '$' + parseFloat(data.amount).toFixed(2) : '$0.00';
+        if (amountEl) amountEl.textContent = data.amount ? 'Rs. ' + parseFloat(data.amount).toFixed(2) : 'Rs. 0.00';
         if (totalCountEl) totalCountEl.textContent = data.totalPayments || 0;
-        if (totalAmtEl) totalAmtEl.textContent = data.totalAmount ? '$' + parseFloat(data.totalAmount).toFixed(2) : '$0.00';
+        if (totalAmtEl) totalAmtEl.textContent = data.totalAmount ? 'Rs. ' + parseFloat(data.totalAmount).toFixed(2) : 'Rs. 0.00';
 
         if (data.status === 'paid') {
             if (statusBadge) {
@@ -454,7 +454,7 @@ async function loadUserPaymentHistory() {
         tbody.innerHTML = payments.map((p, i) => `
             <tr>
                 <td>${i + 1}</td>
-                <td>$${parseFloat(p.amount).toFixed(2)}</td>
+                <td>Rs. ${parseFloat(p.amount).toFixed(2)}</td>
                 <td>${p.paid_month || '-'}</td>
                 <td>${p.payment_method || '-'}</td>
                 <td>${statusMap[p.status] || p.status}</td>
@@ -857,7 +857,7 @@ function markUserNotificationsAsRead(event) {
 
 function clearUserNotifications(event) {
     if (event) event.stopPropagation();
-    const dismissed = {};
+    const dismissed = JSON.parse(localStorage.getItem('hms_user_dismissed_notifications') || '{}');
     userNotifications.forEach(n => { dismissed[n.id] = n.status; });
     localStorage.setItem('hms_user_dismissed_notifications', JSON.stringify(dismissed));
     userNotifications = [];

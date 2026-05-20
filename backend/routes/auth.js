@@ -161,9 +161,25 @@ router.post('/forgot-password', async (req, res) => {
 
         console.log(`[Password Reset] OTP for ${username}: ${otp}`);
 
+        try {
+            const { exec } = require('child_process');
+            const psScript = `
+            [reflection.assembly]::loadwithpartialname("System.Windows.Forms") | Out-Null;
+            [reflection.assembly]::loadwithpartialname("System.Drawing") | Out-Null;
+            $notify = new-object system.windows.forms.notifyicon;
+            $notify.icon = [System.Drawing.SystemIcons]::Information;
+            $notify.visible = $true;
+            $notify.showballoontip(10,"Hostel Management System - Password Reset OTP","Your OTP is: ${otp}. It expires in 5 minutes.",[system.windows.forms.tooltipicon]::None);
+            Start-Sleep -Seconds 10;
+            $notify.visible = $false;
+            `;
+            exec(`powershell.exe -Command "${psScript.replace(/\n/g, '')}"`);
+        } catch (err) {
+            console.error('Failed to show notification', err);
+        }
+
         res.json({
             message: 'OTP sent successfully! Check the server console or Windows notification for your OTP.',
-            otp: otp,
             userId: user.id
         });
     } catch (error) {

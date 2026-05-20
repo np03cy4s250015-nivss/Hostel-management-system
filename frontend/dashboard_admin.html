@@ -647,33 +647,51 @@
                         </form>
                     </div>
                 </div>
-            </div>
-        </main>
-    </div>
-    
+                <!-- This Month stat cards (above charts) -->
+                <div class="stat-card-row thisMonthCards" id="thisMonthCards">
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <img src="assets/icons/fee.svg" alt="Received">
+                        </div>
+                        <div class="stat-details">
+                            <h3 id="monthReceived">—</h3>
+                            <p>Received This Month</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">
+                            <img src="assets/icons/credit-card.svg" alt="Due">
+                        </div>
+                        <div class="stat-details">
+                            <h3 id="monthDue">—</h3>
+                            <p>Due This Month</p>
+                        </div>
+                    </div>
+                </div>
                 <!-- Charts Section -->
                 <div class="card" id="charts">
                     <div class="card-header">
-                        <h3>Analytics</h3>
-                        <p class="card-header-subtitle">Monthly overview of students registered, payments received, and amounts due</p>
+                        <h3>Monthly Analytics</h3>
                     </div>
-                    <div class="card-body">
-                        <div class="charts-grid">
-                            <div class="chart-card">
-                                <h4>Monthly Overview (Bar)</h4>
-                                <div class="chart-wrap">
-                                    <canvas id="barChart"></canvas>
-                                </div>
+                    <div class="card-body charts-card-body">
+                        <div class="chart-panel">
+                            <div class="chart-panel-title">
+                                <span class="chart-panel-dot dot-received"></span>
+                                Monthly Overview
                             </div>
-                            <div class="chart-card">
-                                <h4>Monthly Trend (Line)</h4>
-                                <div class="chart-wrap">
-                                    <canvas id="lineChart"></canvas>
-                                </div>
+                            <div class="charts-legend-row">
+                                <span class="charts-chip chip-due">Due</span>
+                                <span class="charts-chip chip-received">Received</span>
+                            </div>
+                            <div class="chart-panel-canvas" id="mainChartWrap">
+                                <canvas id="mainChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </main>
+    </div>
 
     			<!-- View Student Modal -->
     <div class="modal" id="viewStudentModal">
@@ -727,7 +745,7 @@
                             <input type="tel" id="editStudentPhone" required>
                         </div>
                         <div class="form-group-dash">
-                            <label for="editStudentPrice">Monthly Price ($)</label>
+                            <label for="editStudentPrice">Monthly Price (Rs.)</label>
                             <input type="number" id="editStudentPrice" min="0" step="0.01">
                         </div>
                     </div>
@@ -796,7 +814,7 @@
                             <input type="tel" id="studentPhone" placeholder="Enter phone number" required>
                         </div>
                         <div class="form-group-dash">
-                            <label for="studentPrice">Monthly Price ($)</label>
+                            <label for="studentPrice">Monthly Price (Rs.)</label>
                             <input type="number" id="studentPrice" placeholder="e.g. 200" min="0" required>
                         </div>
                     </div>

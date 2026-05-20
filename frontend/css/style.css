@@ -809,6 +809,29 @@ a:hover {
 }
 
 /* ============================================
+   This Month stat-cards (below main chart)
+   ============================================ */
+#thisMonthCards {
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+}
+
+@media (max-width: 960px) {
+    #thisMonthCards {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    #thisMonthCards {
+        gap: 10px;
+        margin-top: 10px;
+    }
+}
+
+/* ============================================
    User Dashboard Stats - Separate from Admin
    ============================================ */
 .stats-grid-user {
@@ -3078,53 +3101,276 @@ table tbody tr:hover {
 }
 
 /* ============================================
-   Charts Section
+   Sidebar Mini Charts
    ============================================ */
 
-.card-header-subtitle {
-    font-size: 0.85rem;
-    color: var(--gray-500);
-    font-weight: 400;
-    margin-top: 4px;
+.sidebar-charts {
+    padding: 14px 16px 20px;
+    flex-shrink: 0;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    background: rgba(0,0,0,0.18);
 }
 
-.chart-card {
-    background: var(--gray-100);
-    border-radius: var(--border-radius);
-    padding: 14px;
-}
-
-.chart-card h4 {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--gray-800);
+.sidebar-charts-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.35);
     margin-bottom: 12px;
 }
 
-.chart-wrap {
-    position: relative;
-    height: min(400px, calc(100vh - 520px));
-    min-height: 220px;
+.sidebar-pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2DD4BF;
+    box-shadow: 0 0 8px rgba(45,212,191,0.55);
+    flex-shrink: 0;
 }
 
-/* 2-col — narrow screens to 1-col earlier so both charts fit page width */
-.charts-grid {
+/* ── Stat Row ─────────────────────────────── */
+.sidebar-stat-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 5px;
+    margin-bottom: 10px;
 }
 
-@media (max-width: 1100px) {
-    .charts-grid {
-        grid-template-columns: 1fr;
+.sidebar-stat-item {
+    text-align: center;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 7px 3px 6px;
+    border: 1px solid rgba(255,255,255,0.055);
+    transition: background 0.2s;
+}
+.sidebar-stat-item:hover {
+    background: rgba(255,255,255,0.07);
+}
+
+.sidebar-stat-num {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.88);
+    line-height: 1;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+}
+.sidebar-stat-num.sidebar-stud { color: #2DD4BF; }
+.sidebar-stat-num.sidebar-due  { color: #F18B9B; }
+.sidebar-stat-num.sidebar-recv { color: #7BC09E; }
+
+.sidebar-stat-name {
+    display: block;
+    font-size: 0.52rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 3px;
+}
+
+/* ── Chart Box ────────────────────────────── */
+.sidebar-chart-box {
+    background: rgba(255,255,255,0.025);
+    border-radius: 10px;
+    padding: 8px 6px 6px;
+    border: 1px solid rgba(255,255,255,0.055);
+}
+.sidebar-chart-box canvas {
+    display: block;
+    height: 108px !important;
+    max-height: 108px;
+}
+
+/* ── Legend inside chart box ───────────────── */
+.chart-legend-inner {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    padding: 0 2px 4px;
+}
+.sidebar-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.45);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+.sidebar-legend-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ── Footer link ──────────────────────────── */
+.sidebar-charts-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #2DD4BF;
+    margin-top: 9px;
+    padding: 5px;
+    border-radius: 7px;
+    transition: background 0.2s, color 0.2s;
+    letter-spacing: 0.3px;
+}
+.sidebar-charts-link span {
+    display: inline-block;
+    transition: transform 0.2s;
+}
+.sidebar-charts-link:hover {
+    background: rgba(45,212,191,0.12);
+    color: #fff;
+}
+.sidebar-charts-link:hover span {
+    transform: translateX(2px);
+}
+
+/* ============================================
+   Charts Section
+   ============================================ */
+
+#charts .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+#charts .card-header h3 {
+    font-size: clamp(1rem, 2.5vw, 1.15rem);
+}
+
+/* ── Legend chips ─────────────────────────── */
+.charts-legend-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.charts-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-300);
+    color: var(--gray-600);
+}
+
+.charts-chip::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+
+.charts-chip.chip-received::before   { background: rgba(91,154,125,0.85); }
+.charts-chip.chip-due::before        { background: rgba(212,107,122,0.75); }
+
+/* chart-panel grid block removed — only one panel now */
+
+/* Min-height so the card grows to fit the chart panel */
+#charts { min-height: 380px; }
+
+.chart-panel {
+    background: var(--gray-100);
+    border-radius: var(--border-radius);
+    padding: 14px;
+    border: 1px solid var(--gray-300);
+    display: flex;
+    flex-direction: column;
+    height: 340px;
+}
+
+.chart-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 10px;
+    white-space: nowrap;
+}
+
+/* View-toggle buttons removed — always line view */
+
+.chart-panel-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.chart-panel-dot.dot-students { background: rgba(10,139,143,0.85); }
+.chart-panel-dot.dot-received  { background: rgba(91,154,125,0.85); }
+.chart-panel-dot.dot-due       { background: rgba(212,107,122,0.75); }
+
+.chart-panel-canvas {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+}
+
+.chart-panel-canvas canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.chart-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-500);
+    font-size: 0.85rem;
+}
+
+/* ── Responsive charts ─────────────────────── */
+@media (max-width: 960px) {
+    .chart-panel {
+        height: 260px;
     }
 }
 
 @media (max-width: 600px) {
-    .chart-wrap {
+    .charts-card-body {
+        padding: 10px 12px;
+    }
+
+    .chart-panel {
+        padding: 10px 8px;
         height: 220px;
     }
-    .chart-card {
-        padding: 10px;
+
+    .chart-panel-title {
+        font-size: 0.72rem;
+    }
+
+    .charts-chip {
+        font-size: 0.65rem;
+        padding: 2px 8px;
     }
 }
+

@@ -2,8 +2,8 @@
 // Hostel Management System - Main JavaScript
 // ============================================
 
-const API_BASE_URL = (window._env_ && window._env_.API_BASE_URL) || 'http://127.0.0.1:3000/api/auth';
-const UPLOAD_BASE_URL = (window._env_ && window._env_.UPLOAD_BASE_URL) || 'http://127.0.0.1:3000';
+const API_BASE_URL = typeof CONFIG !== 'undefined' ? `${CONFIG.API_ORIGIN}/api/auth` : 'http://127.0.0.1:3000/api/auth';
+const UPLOAD_BASE_URL = typeof CONFIG !== 'undefined' ? CONFIG.API_ORIGIN : 'http://127.0.0.1:3000';
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
@@ -73,9 +73,9 @@ async function handleLogin(e) {
         }
         
         if (data.user.role === 'admin') {
-            window.location.href = 'frontend/dashboard_admin.html#dashboard';
+            window.location.href = typeof getFrontendUrl !== 'undefined' ? getFrontendUrl('frontend/dashboard_admin.html#dashboard') : 'frontend/dashboard_admin.html#dashboard';
         } else {
-            window.location.href = 'frontend/dashboard_user.html';
+            window.location.href = typeof getFrontendUrl !== 'undefined' ? getFrontendUrl('frontend/dashboard_user.html') : 'frontend/dashboard_user.html';
         }
     } catch (error) {
         console.error('Login error:', error);
@@ -125,7 +125,7 @@ function checkAuth() {
     if (!session) {
         const currentPage = window.location.pathname;
         if (currentPage.includes('dashboard')) {
-            window.location.href = '../index.html';
+            window.location.href = typeof getFrontendUrl !== 'undefined' ? getFrontendUrl('index.html') : '../index.html';
         }
         return;
     }
@@ -135,9 +135,9 @@ function checkAuth() {
     
     if (currentPage.includes('index.html') || currentPage.endsWith('/')) {
         if (userData.role === 'admin') {
-            window.location.href = 'frontend/dashboard_admin.html#dashboard';
+            window.location.href = typeof getFrontendUrl !== 'undefined' ? getFrontendUrl('frontend/dashboard_admin.html#dashboard') : 'frontend/dashboard_admin.html#dashboard';
         } else {
-            window.location.href = 'frontend/dashboard_user.html';
+            window.location.href = typeof getFrontendUrl !== 'undefined' ? getFrontendUrl('frontend/dashboard_user.html') : 'frontend/dashboard_user.html';
         }
     } else if (currentPage.includes('dashboard')) {
         if (!window.location.hash) {
@@ -149,13 +149,13 @@ function checkAuth() {
 function logout() {
     localStorage.removeItem('hms_session');
     sessionStorage.removeItem('hms_session');
-    window.location.href = '../index.html';
+    window.location.href = typeof getFrontendUrl !== 'undefined' ? getFrontendUrl('index.html') : '../index.html';
 }
 
 function getCurrentUser() {
     let session = localStorage.getItem('hms_session') || sessionStorage.getItem('hms_session');
     if (!session) {
-        window.location.href = '../index.html';
+        window.location.href = typeof getFrontendUrl !== 'undefined' ? getFrontendUrl('index.html') : '../index.html';
         return null;
     }
     return JSON.parse(session);
