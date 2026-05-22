@@ -915,7 +915,7 @@ async function addStudent() {
     const password = document.getElementById('studentPassword').value;
     const submitBtn = document.querySelector('#addStudentModal .btn-primary');
     
-    if (!name || !email || !phone || !price || !roomId || !username || !password) {
+    if (!name || !email || !phone || !username || !password) {
         showToast('Please fill in all required fields', 'error');
         return;
     }
@@ -996,18 +996,22 @@ async function deleteStudent(studentId) {
         try {
             const response = await fetch(`${DATA_API_BASE_URL}/students/${studentId}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
             });
-            
-            if (!response.ok) throw new Error('Failed to delete student');
-            
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'Failed to delete student');
+
             showToast('Student deleted successfully!', 'success');
             loadStudents();
             loadRooms();
             loadStats();
         } catch (error) {
             console.error('Error deleting student:', error);
-            showToast('Failed to delete student', 'error');
+            showToast(error.message || 'Failed to delete student', 'error');
         }
     });
 }
@@ -1289,10 +1293,12 @@ async function editStudent(studentId) {
             filterRoomsByFloor('', roomSelect);
         }
         
-        floorSelect.addEventListener('change', function() {
+        const freshFloor = floorSelect.cloneNode(true);
+        floorSelect.parentNode.replaceChild(freshFloor, floorSelect);
+        freshFloor.addEventListener('change', function() {
             filterRoomsByFloor(this.value, roomSelect);
         });
-        
+
         openModal('editStudentModal');
     } catch (error) {
         console.error('Error editing student:', error);
@@ -1460,7 +1466,37 @@ async function editNotice(noticeId) {
 }
 
 function exportReport() {
-    console.log('Exporting report...');
+    if (!studentsData || studentsData.length === 0) {
+        showToast('No student data to export', 'warning');
+        return;
+    }
+
+    const headers = ['Admission No', 'First Name', 'Last Name', 'Email', 'Phone', 'Room', 'Floor', 'Monthly Price'];
+    const rows = studentsData.map(s => [
+        s.admission_number || '',
+        s.first_name || '',
+        s.last_name || '',
+        s.email || '',
+        s.phone || '',
+        s.room_number || 'Not Assigned',
+        s.floor || '',
+        s.price ? parseFloat(s.price).toFixed(2) : ''
+    ]);
+
+    const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `students_report_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
     showToast('Report exported successfully!', 'success');
 }
 
@@ -1483,10 +1519,9 @@ function showSection(section) {
     const studentsSection = document.getElementById('students');
     const roomsSection = document.getElementById('rooms');
     const complaintsSection = document.getElementById('complaints');
-    const settingsRequestsSection = document.getElementById('settings-requests');
     const settingsSection = document.getElementById('settings');
     const chartsSection = document.getElementById('charts');
-    
+
     if (section === 'dashboard') {
         if (statsGrid) statsGrid.style.display = 'grid';
         if (noticesSection) noticesSection.style.display = 'block';
@@ -1494,7 +1529,6 @@ function showSection(section) {
         if (studentsSection) studentsSection.style.display = 'none';
         if (roomsSection) roomsSection.style.display = 'none';
         if (complaintsSection) complaintsSection.style.display = 'none';
-        if (settingsRequestsSection) settingsRequestsSection.style.display = 'none';
         if (settingsSection) settingsSection.style.display = 'none';
         if (chartsSection) chartsSection.style.display = 'none';
         // Show limited preview on dashboard
@@ -1506,10 +1540,9 @@ function showSection(section) {
         if (studentsSection) studentsSection.style.display = 'none';
         if (roomsSection) roomsSection.style.display = 'none';
         if (complaintsSection) complaintsSection.style.display = 'none';
-        if (settingsRequestsSection) settingsRequestsSection.style.display = 'none';
         if (settingsSection) settingsSection.style.display = 'none';
         if (chartsSection) chartsSection.style.display = 'none';
-        
+
         if (section === 'students' && studentsSection) {
             studentsSection.style.display = 'block';
         } else if (section === 'rooms' && roomsSection) {
@@ -1522,9 +1555,6 @@ function showSection(section) {
         } else if (section === 'notices' && noticesSection) {
             noticesSection.style.display = 'block';
             loadNotices(); // Load full list
-        } else if (section === 'settings-requests' && settingsRequestsSection) {
-            settingsRequestsSection.style.display = 'block';
-            filterRequests('pending');
         } else if (section === 'settings' && settingsSection) {
             settingsSection.style.display = 'block';
             loadAdminSettings();
@@ -1535,201 +1565,6 @@ function showSection(section) {
     }
 }
 
-// ============================================
-// Settings Requests Management
-// ============================================
-
-/**
- * Load all settings change requests
- * @param {string} filter - 'pending' or 'all'
- */
-async function loadSettingsRequests(filter = 'pending') {
-    try {
-        const response = await fetch(`${DATA_API_BASE_URL}/settings-requests`, {
-            headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch requests');
-        }
-        
-        const requests = await response.json();
-        
-        // Update pending count badge
-        const pendingCount = requests.filter(r => r.status === 'pending').length;
-        const pendingBadge = document.getElementById('pendingCount');
-        if (pendingBadge) {
-            pendingBadge.textContent = pendingCount;
-            pendingBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
-        }
-        
-        renderSettingsRequests(requests, filter);
-    } catch (error) {
-        console.error('Error loading settings requests:', error);
-        document.getElementById('settingsRequestsTableBody').innerHTML = 
-            '<tr><td colspan="9" style="text-align:center;color:var(--danger-color)">Failed to load requests</td></tr>';
-    }
-}
-
-/**
- * Render settings requests table
- * @param {Array} requests - All requests from server
- * @param {string} filter - 'pending' or 'all'
- */
-function renderSettingsRequests(requests, filter) {
-    const tbody = document.getElementById('settingsRequestsTableBody');
-    
-    // Filter based on status
-    let filteredRequests = requests;
-    if (filter === 'pending') {
-        filteredRequests = requests.filter(r => r.status === 'pending');
-    }
-    
-    if (filteredRequests.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray-500);padding:20px;">No requests found</td></tr>';
-        return;
-    }
-    
-    tbody.innerHTML = filteredRequests.map((req, i) => `
-        <tr data-request-id="${req.id}">
-            <td>${i + 1}</td>
-            <td>
-                <div class="user-info-cell">
-                    <div class="user-avatar-small" style="width:28px;height:28px;font-size:0.7rem;background:linear-gradient(135deg,var(--primary-color),var(--secondary-color));display:flex;align-items:center;justify-content:center;border-radius:50%;color:white;font-weight:600;">
-                        ${getInitials(req.requested_by_firstname + ' ' + req.requested_by_lastname)}
-                    </div>
-                    <span>${req.requested_by_username}</span>
-                </div>
-            </td>
-            <td><span class="setting-type">${req.setting_type}</span></td>
-            <td><code class="old-value">${req.old_value || '-'}</code></td>
-            <td><code class="new-value">${req.new_value}</code></td>
-            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${req.reason || ''}">${req.reason || '-'}</td>
-            <td><span class="request-status ${req.status}">${req.status}</span></td>
-            <td>${new Date(req.created_at).toLocaleDateString()}</td>
-            <td>
-                ${req.status === 'pending' ? `
-                    <div class="request-actions">
-                        <button class="request-btn approve" onclick="approveRequest(${req.id})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                            Approve
-                        </button>
-                        <button class="request-btn reject" onclick="rejectRequest(${req.id})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                            Reject
-                        </button>
-                    </div>
-                ` : `
-                    <div class="request-processed">
-                        ${req.reviewed_by_firstname ? `By: ${req.reviewed_by_firstname}` : ''}
-                        ${req.review_notes ? `<br><small title="${req.review_notes}">${req.review_notes.substring(0,30)}...</small>` : ''}
-                    </div>
-                `}
-            </td>
-        </tr>
-    `).join('');
-}
-
-/**
- * Approve a settings change request
- */
-async function approveRequest(requestId) {
-    if (!confirm('Approve this change? The user\'s settings will be updated immediately.')) {
-        return;
-    }
-    
-    const notes = prompt('Optional: Add review notes (e.g., reason for approval):', '');
-    if (notes === null) return; // User cancelled
-    
-    try {
-        const response = await fetch(`${DATA_API_BASE_URL}/settings-requests/${requestId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: JSON.stringify({
-                status: 'approved',
-                reviewNotes: notes
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to approve request');
-        }
-        
-        showToast('Request approved successfully!', 'success');
-        loadSettingsRequests(); // Refresh table
-    } catch (error) {
-        console.error('Error approving request:', error);
-        showToast(error.message, 'error');
-    }
-}
-
-/**
- * Reject a settings change request
- */
-async function rejectRequest(requestId) {
-    if (!confirm('Reject this change request?')) {
-        return;
-    }
-    
-    const notes = prompt('Reason for rejection (required):', '');
-    if (!notes || notes.trim() === '') {
-        showToast('Please provide a reason for rejection', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`${DATA_API_BASE_URL}/settings-requests/${requestId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: JSON.stringify({
-                status: 'rejected',
-                reviewNotes: notes
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to reject request');
-        }
-        
-        showToast('Request rejected', 'warning');
-        loadSettingsRequests(); // Refresh table
-    } catch (error) {
-        console.error('Error rejecting request:', error);
-        showToast(error.message, 'error');
-    }
-}
-
-/**
- * Filter requests by status
- * @param {string} filter - 'pending' or 'all'
- */
-function filterRequests(filter) {
-    // Update button active states
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        if (btn.dataset.filter === filter) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-    
-    loadSettingsRequests(filter);
-}
 
 // ============================================
 // Admin Settings (Direct Update - No Approval Needed)
@@ -1845,9 +1680,6 @@ function getPreviousComplaintsKey() {
     return 'hms_admin_previous_complaints';
 }
 
-function getPreviousRequestsKey() {
-    return 'hms_admin_previous_requests';
-}
 
 async function initAdminNotifications() {
     const stored = localStorage.getItem(getNotificationStorageKey());
@@ -1861,7 +1693,6 @@ async function initAdminNotifications() {
     updateNotificationBadge();
     
     await checkForNewNotifications();
-    // Poll for new notifications every 15 seconds
     notificationCheckInterval = setInterval(checkForNewNotifications, 5000);
 }
 
@@ -1878,8 +1709,7 @@ async function checkForNewNotifications() {
         // Detect new notifications and status changes
         let needsComplaintReload = false;
         let needsPaymentReload = false;
-        let needsRequestReload = false;
-        
+
         apiNotifications.forEach(n => {
             const existing = adminNotifications.find(en => en.id === n.id);
             if (!existing) {
@@ -1892,7 +1722,6 @@ async function checkForNewNotifications() {
                 }
                 if (n.type === 'complaint') needsComplaintReload = true;
                 if (n.type === 'payment') needsPaymentReload = true;
-                if (n.type === 'request') needsRequestReload = true;
                 addNotification({
                     type: n.type,
                     title: n.title,
@@ -1904,7 +1733,6 @@ async function checkForNewNotifications() {
                 });
             } else if (existing.status !== n.status) {
                 if (n.type === 'complaint') needsComplaintReload = true;
-                if (n.type === 'request') needsRequestReload = true;
                 adminNotifications = adminNotifications.filter(en => en.id !== n.id);
                 addNotification({
                     type: n.type,
@@ -1917,17 +1745,13 @@ async function checkForNewNotifications() {
                 });
             }
         });
-        
+
         if (needsComplaintReload) { loadComplaints(); loadStats(); }
         if (needsPaymentReload) { loadPayments(); loadStats(); }
-        if (needsRequestReload) { loadSettingsRequests(); }
-        
+
         // Update local storage with latest data
         localStorage.setItem(getPreviousComplaintsKey(), JSON.stringify(
             apiNotifications.filter(n => n.type === 'complaint').map(n => n.refId)
-        ));
-        localStorage.setItem(getPreviousRequestsKey(), JSON.stringify(
-            apiNotifications.filter(n => n.type === 'request').map(n => n.refId)
         ));
         
     } catch (error) {
@@ -1953,8 +1777,6 @@ function addNotification(notification) {
     
     if (notification.type === 'complaint') {
         showToast('New complaint received!', 'warning');
-    } else if (notification.type === 'request') {
-        showToast('New approval request!', 'info');
     } else if (notification.type === 'payment') {
         showToast(`Payment: ${notification.message}`, 'success');
     }
@@ -2067,8 +1889,6 @@ function handleNotificationClick(type, refId) {
     if (type === 'complaint') {
         showSection('complaints');
         viewComplaint(refId);
-    } else if (type === 'request') {
-        showSection('settings-requests');
     } else if (type === 'payment') {
         showSection('payments');
     }

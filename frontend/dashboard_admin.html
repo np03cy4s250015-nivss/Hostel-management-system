@@ -103,17 +103,6 @@
                  </div>
                  
                  <div class="nav-section">
-                     <span class="nav-section-title">Approvals</span>
-                     <a href="#settings-requests" class="nav-item" onclick="showSection('settings-requests'); closeSidebarMobile();">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                             <path d="M9 12l2 2 4-4"></path>
-                         </svg>
-                         <span>Settings Requests</span>
-                     </a>
-                 </div>
-                 
-                 <div class="nav-section">
                      <span class="nav-section-title">Settings</span>
                      <a href="#settings" class="nav-item" onclick="showSection('settings'); closeSidebarMobile();">
                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -522,57 +511,6 @@
                             <p style="text-align:center;padding:20px;color:#999;">Loading...</p>
                         </div>
                     </div>
-                 </div>
-                 
-                 <!-- Settings Change Requests Section -->
-                 <div class="card" id="settings-requests">
-                      <div class="card-header">
-                          <h3>Settings Change Requests</h3>
-                          <div class="filter-buttons">
-                              <button class="filter-btn active" data-filter="pending" onclick="filterRequests('pending')">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                      <circle cx="12" cy="12" r="10"></circle>
-                                      <line x1="12" y1="8" x2="12" y2="12"></line>
-                                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                                  </svg>
-                                  Pending
-                                  <span class="badge badge-warning" id="pendingCount">0</span>
-                              </button>
-                              <button class="filter-btn" data-filter="all" onclick="filterRequests('all')">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                      <rect x="3" y="3" width="7" height="7"></rect>
-                                      <rect x="14" y="3" width="7" height="7"></rect>
-                                      <rect x="14" y="14" width="7" height="7"></rect>
-                                      <rect x="3" y="14" width="7" height="7"></rect>
-                                  </svg>
-                                  All Requests
-                              </button>
-                          </div>
-                      </div>
-                     <div class="card-body">
-                         <div class="table-responsive">
-                             <table>
-                                 <thead>
-                                     <tr>
-                                          <th>#</th>
-                                          <th>User</th>
-                                         <th>Type</th>
-                                         <th>Old Value</th>
-                                         <th>New Value</th>
-                                         <th>Reason</th>
-                                         <th>Status</th>
-                                         <th>Requested</th>
-                                         <th>Actions</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody id="settingsRequestsTableBody">
-                                     <tr>
-                                         <td colspan="9" style="text-align:center">Loading...</td>
-                                     </tr>
-                                 </tbody>
-                             </table>
-                         </div>
-                     </div>
                  </div>
                  
                  <!-- Settings Section -->

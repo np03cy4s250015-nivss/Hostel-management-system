@@ -744,7 +744,6 @@ async function initUserNotifications() {
     updateUserNotificationBadge();
     
     await checkForUserNotifications();
-    // Poll for new notifications every 15 seconds
     userNotificationCheckInterval = setInterval(checkForUserNotifications, 5000);
 }
 
