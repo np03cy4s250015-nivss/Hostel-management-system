@@ -823,7 +823,7 @@ router.get('/monthly-stats', async (req, res) => {
 
         for (let i = 11; i >= 0; i--) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            months.push(d.toISOString().slice(0, 7)); // YYYY-MM
+            months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
         }
 
         // Fetch students per joined_at month
