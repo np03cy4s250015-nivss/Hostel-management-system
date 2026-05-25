@@ -46,6 +46,11 @@ app.use('/api/data', require('./routes/data'));
 app.use('/api/payment', require('./routes/payment'));
 app.use('/api', require('./routes'));
 
+app.use((req, res) => {
+    console.log(`404 Not Found: ${req.method} ${req.url}`);
+    res.status(404).json({ error: `Route ${req.url} not found` });
+});
+
 app.get('/', (req, res) => {
     res.json({ message: 'Hostel Management System API' });
 });

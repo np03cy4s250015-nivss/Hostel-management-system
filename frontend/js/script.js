@@ -2,8 +2,8 @@
 // Hostel Management System - Main JavaScript
 // ============================================
 
-const API_BASE_URL = typeof CONFIG !== 'undefined' ? `${CONFIG.API_ORIGIN}/api/auth` : 'http://127.0.0.1:3000/api/auth';
-const UPLOAD_BASE_URL = typeof CONFIG !== 'undefined' ? CONFIG.API_ORIGIN : 'http://127.0.0.1:3000';
+const API_BASE_URL = typeof CONFIG !== 'undefined' ? `${CONFIG.API_ORIGIN}/api/auth` : 'http://localhost:3000/api/auth';
+const UPLOAD_BASE_URL = typeof CONFIG !== 'undefined' ? CONFIG.API_ORIGIN : 'http://localhost:3000';
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
